@@ -74,18 +74,19 @@ class Game {
 
         String[] PlayerNames = new String[playerCount];
         for (int i = 0; i < playerCount; i++) {
-            boolean nameIsUnique = true;
+            boolean nameIsUnique;
             do {
                 System.out.println("Enter player name:");
                 String playerName = in.nextLine();
                 PlayerNames[i] = playerName;
+                nameIsUnique = true;
                 for (int j = i; j > 0; j--) {
                     if (playerName.equals(PlayerNames[j-1])) {
                         nameIsUnique = false;
                         System.out.println("That name is already in use.");
                     }
                 }               
-            } while (nameIsUnique);
+            } while (!nameIsUnique);
         }
         return PlayerNames;
     }
