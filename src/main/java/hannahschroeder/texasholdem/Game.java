@@ -83,7 +83,7 @@ class Game {
                 for (int j = i; j > 0; j--) {
                     if (playerName.equals(PlayerNames[j-1])) {
                         nameIsUnique = false;
-                        System.out.println("That name is already in use.");
+                        System.out.println("Invalid input - name must be unique");
                     }
                 }               
             } while (!nameIsUnique);
