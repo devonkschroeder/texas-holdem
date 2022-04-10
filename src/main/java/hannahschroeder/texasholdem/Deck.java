@@ -6,6 +6,10 @@ import java.util.Stack;
 class Deck {
     Stack<Card> deck;
 
+    /**
+     * 
+     * @param shuffle shuffles the deck if true
+     */
     public Deck(boolean shuffle) {
         deck = new Stack<>();
 

@@ -67,7 +67,7 @@ class Hand implements Comparable<Hand> {
     public String toString() {
         String handString = "";
         for (Card card : cards) {
-            handString += card.toString() +  " ";
+            handString += card.toString() + " ";
         }
 
         handString = handString.substring(0, handString.length() - 1);

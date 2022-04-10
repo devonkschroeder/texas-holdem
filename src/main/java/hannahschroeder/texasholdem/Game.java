@@ -6,12 +6,12 @@ import java.util.Scanner;
 
 class Game {
     Table table;
-    int startAmount;
+    int startCash;
     List<Player> players;
     Scanner in;
 
-    public Game(Scanner scanner, int startAmount) {
-        this.startAmount = startAmount;
+    public Game(Scanner scanner, int startCash) {
+        this.startCash = startCash;
         players = new ArrayList<>();
         table = new Table(players);
         in = scanner;
@@ -24,9 +24,13 @@ class Game {
     public static void main(String[] args) {
         Scanner in = new Scanner(System.in);
 
-        Game game = new Game(in, 2500);
-        game.addPlayer("Player1");
-        game.addPlayer("Player2");
+        String[] Players = getPlayers(in);
+        int startCash = getStartCash(in);
+
+        Game game = new Game(in, startCash);
+        for (String playerName : Players) {
+            game.addPlayer(playerName);
+        }
 
         game.play();
 
@@ -34,7 +38,7 @@ class Game {
     }
 
     public void addPlayer(String playerName) {
-        players.add(new Player(playerName, startAmount));
+        players.add(new Player(playerName, startCash));
     }
 
     public void play() {
@@ -44,6 +48,70 @@ class Game {
         
         // determine big and small blind (amounts and players)
         playRound();
+    }
+
+    private static String[] getPlayers(Scanner in){
+        boolean isValidPlayerCount;
+        int playerCount = 0;
+        do {
+            System.out.println("How many players will be playing? (2-12)");
+            String playerCountString = in.nextLine();
+            try {
+                playerCount = Integer.parseInt(playerCountString);
+                if (playerCount < 2 || playerCount > 12) {
+                    isValidPlayerCount = false;
+                } else {
+                    isValidPlayerCount = true;
+                }
+            } catch (Exception e) {
+                isValidPlayerCount = false;
+            }
+            if(!isValidPlayerCount) {
+                System.out.println("Invalid input");
+            }
+
+        } while (!isValidPlayerCount);
+
+        String[] PlayerNames = new String[playerCount];
+        for (int i = 0; i < playerCount; i++) {
+            boolean nameIsUnique = true;
+            do {
+                System.out.println("Enter player name:");
+                String playerName = in.nextLine();
+                PlayerNames[i] = playerName;
+                for (int j = i; j > 0; j--) {
+                    if (playerName.equals(PlayerNames[j-1])) {
+                        nameIsUnique = false;
+                        System.out.println("That name is already in use.");
+                    }
+                }               
+            } while (nameIsUnique);
+        }
+        return PlayerNames;
+    }
+
+    private static int getStartCash(Scanner in) {
+        boolean isValidAmount;
+        int startCash = 0;
+        do {
+            System.out.println("How many chips should each player strart with? (minimum 3000)");
+            String startCashString = in.nextLine();
+            try {
+                startCash = Integer.parseInt(startCashString);
+                if (startCash < 3000) {
+                    isValidAmount = false;
+                } else {
+                    isValidAmount = true;
+                }
+            } catch (Exception e) {
+                isValidAmount = false;
+            }
+            if(!isValidAmount) {
+                System.out.println("Invalid input");
+            }
+
+        } while (!isValidAmount);
+        return startCash;
     }
     
     private void playRound() {
