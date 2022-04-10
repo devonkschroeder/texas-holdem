@@ -1,3 +1,5 @@
+package hannahschroeder.texasholdem;
+
 public enum Suit {
     SPADES("♠"),
     HEARTS("♥"),

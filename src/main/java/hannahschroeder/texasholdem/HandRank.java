@@ -1,3 +1,5 @@
+package hannahschroeder.texasholdem;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

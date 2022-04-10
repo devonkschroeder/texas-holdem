@@ -1,3 +1,5 @@
+package hannahschroeder.texasholdem;
+
 class Pot {
     int potTotal;
 

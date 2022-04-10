@@ -1,3 +1,5 @@
+package hannahschroeder.texasholdem;
+
 public enum Rank {
     TWO(2),
     THREE(3),

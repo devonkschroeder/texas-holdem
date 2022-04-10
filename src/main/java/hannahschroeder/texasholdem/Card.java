@@ -1,3 +1,5 @@
+package hannahschroeder.texasholdem;
+
 class Card implements Comparable<Card>{
     private final Rank rank;
     private final Suit suit;

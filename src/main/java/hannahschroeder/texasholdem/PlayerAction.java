@@ -1,3 +1,5 @@
+package hannahschroeder.texasholdem;
+
 import java.util.Scanner;
 
 public enum PlayerAction {

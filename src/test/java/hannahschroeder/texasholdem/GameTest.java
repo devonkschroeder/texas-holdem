@@ -1,6 +1,50 @@
-class Test {
-    public static void main(String[] args) {
+package hannahschroeder.texasholdem;
 
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+
+public class GameTest 
+{
+    @Test
+    public void checkHandScores()
+    {
+        Hand[] hands = prepareHands();
+
+        for (int i = 0; i < hands.length - 1; i++) {
+
+            Hand player1 = hands[i];
+
+            String draw = "draw";
+            for (int j = i + 1; j < hands.length; j++) {
+                Hand player2 = hands[j];
+
+                String expectedWinner = null;
+                String actualWinner = null;
+
+                if (SCORES[i] == SCORES[j]) {
+                    expectedWinner = draw;
+                } else if (SCORES[i] > SCORES[j]) {
+                    expectedWinner = player1.toString();
+                } else {
+                    expectedWinner = player2.toString();
+                }
+
+                if (player1.compareTo(player2) == 0) {
+                    actualWinner = draw;
+                } else if (player1.compareTo(player2) > 0) {
+                    actualWinner = player1.toString();
+                } else {
+                    actualWinner = player2.toString();
+                }
+
+                // System.out.printf("Player 1: %s (%s)%nPlayer 2: %s (%s)%n", player1.toString(), HandValue.handValueString(player1), player2.toString(), HandValue.handValueString(player1));
+                assertEquals("Hand comparison", expectedWinner, actualWinner); //, "wrong winner");
+            }
+        }
+    }
+
+    private static Hand[] prepareHands() {
         Hand royalFlushHearts = new Hand();
         royalFlushHearts.addCard(new Card(Rank.TEN, Suit.HEARTS));
         royalFlushHearts.addCard(new Card(Rank.JACK, Suit.HEARTS));
@@ -275,117 +319,42 @@ class Test {
             highCardQueenJackTenSixThree2
         };
 
-        int[] scores = {
-            26,
-            26,
-            25,
-            24,
-            23,
-            22,
-            21,
-            20,
-            20,
-            19,
-            18,
-            17,
-            16,
-            16,
-            15,
-            14,
-            14,
-            13,
-            12,
-            12,
-            11,
-            10,
-            9,
-            8,
-            7,
-            7,
-            6,
-            5,
-            4,
-            3,
-            2,
-            1,
-            1
-        };
-
-        TestHarness tester = new TestHarness();
-        String draw = "draw";
-
-        for (int i = 0; i < hands.length - 1; i++) {
-
-            Hand player1 = hands[i];
-
-            for (int j = i + 1; j < hands.length; j++) {
-                Hand player2 = hands[j];
-
-                String expectedWinner = null;
-                String actualWinner = null;
-
-                if (scores[i] == scores[j]) {
-                    expectedWinner = draw;
-                } else if (scores[i] > scores[j]) {
-                    expectedWinner = player1.toString();
-                } else {
-                    expectedWinner = player2.toString();
-                }
-
-                if (player1.compareTo(player2) == 0) {
-                    actualWinner = draw;
-                } else if (player1.compareTo(player2) > 0) {
-                    actualWinner = player1.toString();
-                } else {
-                    actualWinner = player2.toString();
-                }
-
-                // System.out.printf("Player 1: %s (%s)%nPlayer 2: %s (%s)%n", player1.toString(), HandValue.handValueString(player1), player2.toString(), HandValue.handValueString(player1));
-                tester.assertEqual("Hand comparison", expectedWinner, actualWinner, "wrong winner");
-            }
-
-            /*
-
-            HandValue handValue = HandValue.getHandValue(hands[i]);
-
-            switch (handValue) {
-                case ROYALFLUSH:
-                    System.out.println("Player has a royal flush.");
-                    break;
-                case STRAIGHTFLUSH:
-                    System.out.println("Player has a straight flush.");
-                    break;
-                case FOUROFAKIND:
-                    System.out.println("Player has four of a kind.");
-                    break;
-                case FULLHOUSE:
-                    System.out.println("Player has a full house.");
-                    break;
-                case FLUSH:
-                    System.out.println("Player has a flush.");
-                    break;
-                case STRAIGHT:
-                    System.out.println("Player has a straight.");
-                    break;
-                case THREEOFAKIND:
-                    System.out.println("Player has three of a kind.");
-                    break;
-                case TWOPAIRS:
-                    System.out.println("Player has two pairs.");
-                    break;
-                case PAIR:
-                    System.out.println("Player has a pair.");
-                    break;
-                case HIGHCARD:
-                    System.out.printf("Player has high card %s.%n", hands[i].highCard().rank().getSymbol());
-                    break;
-            }
-            System.out.println();
-
-            */
-        }
-
-        System.out.println(tester.getEvaluationSummary());
-        
+        return hands;
     }
+
+    private static int[] SCORES = {
+        26,
+        26,
+        25,
+        24,
+        23,
+        22,
+        21,
+        20,
+        20,
+        19,
+        18,
+        17,
+        16,
+        16,
+        15,
+        14,
+        14,
+        13,
+        12,
+        12,
+        11,
+        10,
+        9,
+        8,
+        7,
+        7,
+        6,
+        5,
+        4,
+        3,
+        2,
+        1,
+        1
+    };
 }

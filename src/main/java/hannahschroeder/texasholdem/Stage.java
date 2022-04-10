@@ -1,3 +1,5 @@
+package hannahschroeder.texasholdem;
+
 public enum Stage {
     PREFLOP,
     FLOP,
