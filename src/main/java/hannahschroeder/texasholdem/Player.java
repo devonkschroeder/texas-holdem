@@ -29,15 +29,20 @@ class Player {
         {2, 3, 4, 5, 6}
     };
     private String name;
-    private Pot stack;
+    private int id;
+    private int stack;
     private Hand pocket;
     private Hand finalHand;
-    private boolean isActive;
+    private boolean isFolded;
+    private boolean isBusted = false;
+    private boolean isBigBlind = false;
+    private boolean completedTurn = false;
     private boolean mustReveal;
 
-    public Player(String name, int startAmount) {
+    public Player(String name, int id, int startAmount) {
         this.name = name;
-        stack = new Pot(startAmount);
+        this.id = id;
+        stack = startAmount;
         pocket = new Hand();
         mustReveal = true;
     }
@@ -46,28 +51,56 @@ class Player {
         return name;
     }
 
+    public int getId() {
+        return id;
+    }
+
     public void receiveCard(Card card) {
         pocket.addCard(card);
     }
 
-    public boolean isActive() {
-        return isActive;
+    public boolean isFolded() {
+        return isFolded;
     }
 
     public void setActive() {
-        isActive = true;
+        isFolded = false;
     }
 
-    public int stackValue() {
-        return stack.getTotal();
+    public boolean isBusted() {
+        return isBusted;
+    }
+
+    public void bust() {
+        isBusted = true;
+    }
+
+    public boolean isBigBlind() {
+        return isBigBlind;
+    }
+
+    public void setBigBlind(boolean bigBlindStatus) {
+        isBigBlind = bigBlindStatus;
+    }
+
+    public boolean completedTurn() {
+        return completedTurn;
+    }
+
+    public void setCompletedTurn(boolean bool) {
+        completedTurn = bool;
+    }
+
+    public int getStackValue() {
+        return stack;
     }
 
     public void removeFromStack(int value) {
-        stack.removeValue(value);
+        stack -= value;
     }
 
     public void addToStack(int value) {
-        stack.addValue(value);
+        stack += value;
     }
 
     public Hand getPrivateHand() {
@@ -107,7 +140,7 @@ class Player {
     }
 
     public void fold() {
-        isActive = false;
+        isFolded = true;
         mustReveal = false;
     }
 

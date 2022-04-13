@@ -70,7 +70,9 @@ class Hand implements Comparable<Hand> {
             handString += card.toString() + " ";
         }
 
-        handString = handString.substring(0, handString.length() - 1);
+        if (handString.length() > 0) {
+            handString = handString.substring(0, handString.length() - 1);
+        }
 
         return handString;
     }

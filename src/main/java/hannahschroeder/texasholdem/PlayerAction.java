@@ -1,33 +1,63 @@
 package hannahschroeder.texasholdem;
 
+import java.util.EnumSet;
 import java.util.Scanner;
 
 public enum PlayerAction {
-    BET_OR_RAISE,
-    CALL_OR_CHECK,
-    FOLD;
+    BET("bet"),
+    RAISE("raise"),
+    CALL("call"),
+    CHECK("check"),
+    ALL_IN("all in"),
+    FOLD("fold");
+
+    private String text;
+
+    PlayerAction(String text) {
+        this.text = text;
+    }
+
+    public String toString() {
+        return text;
+    }
 
     private PlayerAction() {
     }
 
     public static PlayerAction getAction(String text) {
-        if (text.equals("raise") || text.equals("bet")) {
-            return PlayerAction.BET_OR_RAISE;
-        } else if (text.equals("call") || text.equals("check")) {
-            return PlayerAction.CALL_OR_CHECK;
-        } else if (text.equals("fold")) {
-            return PlayerAction.FOLD;
+        for (PlayerAction action : PlayerAction.values()) {
+            if (action.text.equals(text)) {
+                return action;
+            }
         }
         return null;
     }
 
-    public static PlayerAction getActionFromScanner(Scanner in, Player player) {        // get input from player
+    public static PlayerAction getActionFromScanner(Scanner in, Player player, EnumSet<PlayerAction> validActions) {
         PlayerAction action = null;
-        while (action == null) {
-            System.out.printf("%s (%s %d), ", player.getName(), player.getPrivateHand(), player.stackValue());
-            System.out.println("what would you like to do? (raise, bet, call, check fold)");
+        boolean isValidAction;
+        do {
+            String playerInfo = String.format("%s (%s %d)", player.getName(), player.getPrivateHand().toString(), player.getStackValue());
+            System.out.printf("%s, what would you like to do? ", playerInfo);
+            printEnumSet(validActions);
             action = PlayerAction.getAction(in.nextLine().toLowerCase());
-        }
+            if (action == null || !validActions.contains(action)) {
+                isValidAction = false;
+                System.out.println("Invalid action");
+            } else {
+                isValidAction = true;
+            }
+        } while (!isValidAction);
         return action;
+    }
+
+    public static void printEnumSet(EnumSet<PlayerAction> set) {
+        String setString = "(";
+        for (PlayerAction action : set) {
+            setString = setString + action.toString() + ", ";
+        }
+        setString = setString.substring(0, setString.length() - 2);
+        setString += ")";
+        System.out.println(setString);
     }
 }
