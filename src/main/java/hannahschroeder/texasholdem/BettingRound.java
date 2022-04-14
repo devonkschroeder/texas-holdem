@@ -62,8 +62,9 @@ class BettingRound {
         do {
             PlayerAction action;
             EnumSet<PlayerAction> validActions;
-            // TODO: how much current player can match the bet affects options
-            if (currentPlayer.isBigBlind() && currentBet == bigBlind) {
+            if (currentPlayer.getStackValue() + playerBets.get(currentPlayer) <= currentBet) {
+                validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.FOLD);
+            } else if (currentPlayer.isBigBlind() && currentBet == bigBlind) {
                 validActions = EnumSet.of(PlayerAction.CHECK, PlayerAction.RAISE, PlayerAction.ALL_IN, PlayerAction.FOLD);
             } else if (currentBet > 0) {
                 validActions = EnumSet.of(PlayerAction.CALL, PlayerAction.RAISE, PlayerAction.ALL_IN, PlayerAction.FOLD);
@@ -106,7 +107,6 @@ class BettingRound {
                     break;
                 }
                 case ALL_IN: {
-                    // TODO: Handle all in
                     if (allInAmount > currentBet) { // refactor to utilize increaseBet() method
                         currentBet = allInAmount;
                         setTurnsIncomplete();
@@ -155,9 +155,29 @@ class BettingRound {
         return false;
     }
 
-    //TODO: get amount from scanner & check that it's within the range
     private int getAmount(Player player, int min, int max) {
-        return min;
+        boolean isValidAmount;
+        int amount = 0;
+        do {
+            System.out.printf("How many chips would you like to add to the pot? (min %d, max %d)%n", min, max);
+            String amountString = in.nextLine();
+            try {
+                amount = Integer.parseInt(amountString);
+                if (amount < min || amount > max) {
+                    isValidAmount = false;
+                } else {
+                    isValidAmount = true;
+                }
+            } catch (Exception e) {
+                isValidAmount = false;
+            }
+            if(!isValidAmount) {
+                System.out.println("Invalid input");
+            }
+
+        } while (!isValidAmount);
+
+        return amount;
     }
 
     /**
