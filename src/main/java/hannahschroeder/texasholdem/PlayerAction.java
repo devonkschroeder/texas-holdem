@@ -33,11 +33,12 @@ public enum PlayerAction {
         return null;
     }
 
-    public static PlayerAction getActionFromScanner(Scanner in, Player player, EnumSet<PlayerAction> validActions) {
+    public static PlayerAction getActionFromScanner(Scanner in, Player player, EnumSet<PlayerAction> validActions, int betsTotal, int currentBet) {
         PlayerAction action = null;
         boolean isValidAction;
         do {
             String playerInfo = String.format("%s (%s %d)", player.getName(), player.getPrivateHand().toString(), player.getStackValue());
+            System.out.printf("Bets: %d, Current bet: %d%n", betsTotal, currentBet);
             System.out.printf("%s, what would you like to do? ", playerInfo);
             printEnumSet(validActions);
             action = PlayerAction.getAction(in.nextLine().toLowerCase());

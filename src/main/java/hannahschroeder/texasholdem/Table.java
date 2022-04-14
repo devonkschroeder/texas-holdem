@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Scanner;
 
 class Table {
+    private Game game;
     private List<Player> players;
     private int startCash;
     private int centerPot = 0;
@@ -14,7 +15,8 @@ class Table {
     private Stage currentStage;
     private Deck deck;
 
-    public Table(List<Player> players, int startCash) {
+    public Table(List<Player> players, int startCash, Game game) {
+        this.game = game;
         this.players = players;
         this.startCash = startCash;
         resetTable();
@@ -35,6 +37,21 @@ class Table {
 
     public List<Player> getAllPlayers() {
         return players;
+    }
+
+    public Player getNextPlayer(Player previousPlayer) {
+        return game.getNextPlayer(previousPlayer);
+    }
+
+    public Player getNextActivePlayer(Player previousPlayer) {
+        Player nextPlayer;
+
+        do {
+            nextPlayer = getNextPlayer(previousPlayer);
+            previousPlayer = nextPlayer;
+        } while (nextPlayer.isFolded() || nextPlayer.isBusted());
+
+        return nextPlayer;
     }
 
     public List<Player> getActivePlayers() {
@@ -77,6 +94,7 @@ class Table {
     public void moveDealerToken() {
         if (dealerToken == players.size() - 1) {
             dealerToken = 0;
+            increaseBlinds();
         } else {
             dealerToken++;
         }
@@ -162,26 +180,28 @@ class Table {
                 communityCards.addCard(deck.drawCard());
                 communityCards.addCard(deck.drawCard());
 
-                System.out.println("Flop:");
-                System.out.println(showCards());
+                System.out.print("Flop: ");
+                System.out.print(showCards());
                 break;
             case TURN:
                 // turn
                 deck.burn();
                 communityCards.addCard(deck.drawCard());
-                System.out.println("Turn:");
-                System.out.println(showCards());
+                System.out.print("Turn: ");
+                System.out.print(showCards());
                 break;
             case RIVER:
                 // river
                 deck.burn();
                 communityCards.addCard(deck.drawCard());
-                System.out.println("River:");
-                System.out.println(showCards());
+                System.out.print("River: ");
+                System.out.print(showCards());
                 break;
             default:
                 throw new RuntimeException("Unexpected stage");
         }
+
+        System.out.printf(" (pot: %d)%n", getCenterPot());
 
         BettingRound bettingRound = new BettingRound(this, in);
         if (currentStage == Stage.PREFLOP) {

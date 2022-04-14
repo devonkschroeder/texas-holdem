@@ -35,7 +35,7 @@ class BettingRound {
      * @return true if betting round resulted in a default win
      */
     public boolean play(boolean isPreFlop, List<Player> roundWinners) {
-        Player currentPlayer = getNextPlayer(dealer);
+        Player currentPlayer = table.getNextActivePlayer(dealer);
         int smallBlind = table.getSmallBlind();
         int bigBlind = 2*smallBlind;
 
@@ -46,14 +46,14 @@ class BettingRound {
             increaseBet(currentPlayer, smallBlind, 0);
             System.out.printf("%s posts small blind of %d.%n", currentPlayer.getName(), currentBet);
 
-            currentPlayer = getNextPlayer(currentPlayer);
+            currentPlayer = table.getNextActivePlayer(currentPlayer);
 
             // posting of big blind
             currentPlayer.setBigBlind(true);
             increaseBet(currentPlayer, bigBlind, 0);
             System.out.printf("%s posts big blind of %d.%n", currentPlayer.getName(), currentBet);
 
-            currentPlayer = getNextPlayer(currentPlayer);
+            currentPlayer = table.getNextActivePlayer(currentPlayer);
         }
 
         /**
@@ -71,7 +71,7 @@ class BettingRound {
             } else {
                 validActions = EnumSet.of(PlayerAction.CHECK, PlayerAction.BET, PlayerAction.ALL_IN, PlayerAction.FOLD);
             }
-            action = PlayerAction.getActionFromScanner(in, currentPlayer, validActions);
+            action = PlayerAction.getActionFromScanner(in, currentPlayer, validActions, getBetsTotal(), currentBet);
 
             int existingBet = playerBets.get(currentPlayer);
             int allInAmount = currentPlayer.getStackValue() + existingBet;
@@ -130,7 +130,7 @@ class BettingRound {
                 currentPlayer.setBigBlind(false);
             }
 
-            Player nextPlayer = getNextPlayer(currentPlayer);
+            Player nextPlayer = table.getNextActivePlayer(currentPlayer);
             if (action == PlayerAction.FOLD) {
                 activePlayers.remove(currentPlayer);
                 currentPlayer = nextPlayer;
@@ -143,14 +143,7 @@ class BettingRound {
         } while (!currentPlayer.completedTurn());
 
         // TODO: handle side pot scenario
-        int sumBets = 0;
-        for (Map.Entry<Player, Integer> entry : playerBets.entrySet()) {
-            int bet = entry.getValue();
-            sumBets += bet;
-            entry.setValue(0);
-        }
-        int oldPot = table.getCenterPot();
-        table.setCenterPot(oldPot + sumBets);
+        moveBetsToCenterPot();
 
         return false;
     }
@@ -159,7 +152,7 @@ class BettingRound {
         boolean isValidAmount;
         int amount = 0;
         do {
-            System.out.printf("How many chips would you like to add to the pot? (min %d, max %d)%n", min, max);
+            System.out.printf("How many chips would you like to bet/raise? (min %d, max %d)%n", min, max);
             String amountString = in.nextLine();
             try {
                 amount = Integer.parseInt(amountString);
@@ -195,24 +188,18 @@ class BettingRound {
         playerBets.put(player, betAmount);
     }
 
-    private Player getNextPlayer(Player currentPlayer) {
-        Player previousPlayer = currentPlayer;
-        Player nextPlayer;
-        do {
-            int previousPlayerId = previousPlayer.getId();
-            int nextPlayerId;
+    private int getBetsTotal() {
+        int betsTotal = 0;
+        for (Map.Entry<Player, Integer> entry : playerBets.entrySet()) {
+            betsTotal += entry.getValue();
+        }
+        return betsTotal;
+    }
 
-            if (previousPlayerId == allPlayers.size() - 1) {
-                nextPlayerId = 0;
-            } else {
-                nextPlayerId = previousPlayerId + 1;
-            }
-
-            nextPlayer = table.getPlayerById(nextPlayerId);
-            previousPlayer = nextPlayer;
-        } while (nextPlayer.isFolded() || nextPlayer.isBusted());
-
-        return nextPlayer;
+    private void moveBetsToCenterPot() {
+        int bets = getBetsTotal();
+        int pot = table.getCenterPot();
+        table.setCenterPot(pot + bets);
     }
 
     /**
@@ -227,7 +214,9 @@ class BettingRound {
             winner = activePlayers.get(0);
             winner.dontReveal();
             roundWinners.add(winner);
-            // TODO: put player bets into table pot
+
+            //put player bets into table's center pot
+            moveBetsToCenterPot();
             return true;
         }
 

@@ -13,7 +13,7 @@ class Game {
     public Game(Scanner scanner, int startCash) {
         this.startCash = startCash;
         players = new ArrayList<>();
-        table = new Table(players, startCash);
+        table = new Table(players, startCash, this);
         in = scanner;
     }
 
@@ -47,6 +47,16 @@ class Game {
         playRound();
 
         table.moveDealerToken();
+    }
+
+    public Player getNextPlayer(Player previousPlayer) {
+        Player nextPlayer = null;
+        if (previousPlayer.getId() == players.size() - 1) {
+            nextPlayer = players.get(0);
+        } else {
+            nextPlayer = players.get(previousPlayer.getId() + 1);
+        }
+        return nextPlayer;
     }
 
     private static String[] getPlayerNames(Scanner in){
@@ -134,16 +144,15 @@ class Game {
             table.revealHands();
 
             // determine winners
-            determineWinners(roundWinners);
+            determineRoundWinners(roundWinners);
         }
 
-        // announce winners
-        announceWinners(roundWinners);
-
-        // TODO: distribute winnings
+        // distribute winnings and announce winners
+        distributePot(roundWinners, table.getCenterPot());
+        announceRoundWinners(roundWinners, table.getCenterPot());
     }
 
-    private void determineWinners(List<Player> winners) {
+    private void determineRoundWinners(List<Player> winners) {
         for (int i = 0; i < players.size(); i++) {
             Player player = players.get(i);
             if (!player.isFolded() && !player.isBusted()) {
@@ -159,9 +168,32 @@ class Game {
         }
     }
 
-    // TODO: modify to include information about pot value won
-    // TODO: distinguish between round winners and game winner
-    private void announceWinners(List<Player> winners) {
+    // TODO: return winners & amount they won as Map
+    private void distributePot(List<Player> winners, int pot) {
+        int winnerCount = winners.size();
+        int winnings = pot / winnerCount;
+        int remainder = pot % winnerCount;
+        for (Player winner : winners) {
+            winner.addToStack(winnings);
+        }
+        if (remainder != 0) {
+            Player dealer = table.getDealer();
+            Player player = getNextPlayer(dealer);
+            do {
+                while (!winners.contains(player)) {
+                    Player next = getNextPlayer(player);
+                    player = next;
+                }
+                player.addToStack(1);
+                remainder--;
+                Player next = getNextPlayer(player);
+                player = next;
+            } while (remainder > 0);
+        }
+    }
+
+    // TODO: modify to include information about amounts won
+    private void announceRoundWinners(List<Player> winners, int pot) {
         if (winners.size() == 1) {
             Player winner = winners.get(0);
             System.out.printf("Winner is %s%n", winner.getName());
