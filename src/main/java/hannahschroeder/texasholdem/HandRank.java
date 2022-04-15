@@ -66,7 +66,7 @@ public enum HandRank {
     }
 
     /**
-     * 
+     * comparison method for when hands are the same rank
      * @param handRank
      * @param hand1
      * @param hand2

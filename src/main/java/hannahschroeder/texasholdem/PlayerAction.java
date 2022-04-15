@@ -4,11 +4,12 @@ import java.util.EnumSet;
 import java.util.Scanner;
 
 public enum PlayerAction {
+    PASS("pass"),
+    ALL_IN("all in"),
     BET("bet"),
     RAISE("raise"),
     CALL("call"),
     CHECK("check"),
-    ALL_IN("all in"),
     FOLD("fold");
 
     private String text;
@@ -35,6 +36,10 @@ public enum PlayerAction {
 
     public static PlayerAction getActionFromScanner(Scanner in, Player player, EnumSet<PlayerAction> validActions, int betsTotal, int currentBet) {
         PlayerAction action = null;
+        if (validActions == null) {
+            return PlayerAction.PASS;
+        }
+
         boolean isValidAction;
         do {
             String playerInfo = String.format("%s (%s %d)", player.getName(), player.getPrivateHand().toString(), player.getStackValue());

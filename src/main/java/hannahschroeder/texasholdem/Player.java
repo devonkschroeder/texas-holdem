@@ -55,6 +55,11 @@ class Player {
         return id;
     }
 
+    public void resetHand() {
+        pocket = new Hand();
+        mustReveal = true;
+    }
+
     public void receiveCard(Card card) {
         pocket.addCard(card);
     }

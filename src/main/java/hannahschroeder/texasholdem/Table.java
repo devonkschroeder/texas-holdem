@@ -19,20 +19,23 @@ class Table {
         this.game = game;
         this.players = players;
         this.startCash = startCash;
-        resetTable();
+        currentStage = Stage.PREFLOP;
+        deck = new Deck(true);
+        communityCards = new Hand();
     }
 
     public void resetTable() {
-        communityCards = new Hand();
         for (Player player : players) {
-            if (player.getStackValue() == 0) {
-                player.bust();
-            } else {
+            if (!player.isBusted()) {
                 player.setActive();
+                player.resetHand();
+                player.setBigBlind(false);
             }
         }
         currentStage = Stage.PREFLOP;
         deck = new Deck(true);
+        communityCards = new Hand();
+        centerPot = 0;
     }
 
     public List<Player> getAllPlayers() {
@@ -97,6 +100,9 @@ class Table {
             increaseBlinds();
         } else {
             dealerToken++;
+        }
+        if (players.get(dealerToken).isBusted()) {
+            moveDealerToken();
         }
     }
 
@@ -172,6 +178,7 @@ class Table {
             case PREFLOP:
                 // deal to active players
                 dealHand();
+                System.out.println("Pre-flop:");
                 break;
             case FLOP:
                 // flop
@@ -181,27 +188,30 @@ class Table {
                 communityCards.addCard(deck.drawCard());
 
                 System.out.print("Flop: ");
-                System.out.print(showCards());
+                System.out.println(showCards());
                 break;
             case TURN:
                 // turn
                 deck.burn();
                 communityCards.addCard(deck.drawCard());
                 System.out.print("Turn: ");
-                System.out.print(showCards());
+                System.out.println(showCards());
                 break;
             case RIVER:
                 // river
                 deck.burn();
                 communityCards.addCard(deck.drawCard());
                 System.out.print("River: ");
-                System.out.print(showCards());
+                System.out.println(showCards());
                 break;
             default:
                 throw new RuntimeException("Unexpected stage");
         }
 
-        System.out.printf(" (pot: %d)%n", getCenterPot());
+        System.out.printf("Pot: %d%n", getCenterPot());
+        for (Player player : getActivePlayers()) {
+            System.out.printf("%s: %d%n", player.getName(), player.getStackValue());
+        }
 
         BettingRound bettingRound = new BettingRound(this, in);
         if (currentStage == Stage.PREFLOP) {

@@ -35,6 +35,7 @@ class BettingRound {
      * @return true if betting round resulted in a default win
      */
     public boolean play(boolean isPreFlop, List<Player> roundWinners) {
+        setTurnsIncomplete();
         Player currentPlayer = table.getNextActivePlayer(dealer);
         int smallBlind = table.getSmallBlind();
         int bigBlind = 2*smallBlind;
@@ -43,62 +44,94 @@ class BettingRound {
             System.out.printf("%s is dealer.%n", dealer.getName());
 
             // posting of small blind
-            increaseBet(currentPlayer, smallBlind, 0);
-            System.out.printf("%s posts small blind of %d.%n", currentPlayer.getName(), currentBet);
+            if (currentPlayer.getStackValue() < smallBlind) {
+                placeBet(currentPlayer, currentPlayer.getStackValue());
+                System.out.printf("%s (small blind) goes all in.%n", currentPlayer.getName());
+            } else {
+                placeBet(currentPlayer, smallBlind);
+                System.out.printf("%s posts small blind of %d.%n", currentPlayer.getName(), currentBet);
+            }
 
             currentPlayer = table.getNextActivePlayer(currentPlayer);
 
             // posting of big blind
             currentPlayer.setBigBlind(true);
-            increaseBet(currentPlayer, bigBlind, 0);
-            System.out.printf("%s posts big blind of %d.%n", currentPlayer.getName(), currentBet);
-
+            if (currentPlayer.getStackValue() < bigBlind) {
+                placeBet(currentPlayer, currentPlayer.getStackValue());
+                System.out.printf("%s (big blind) goes all in.%n", currentPlayer.getName());
+                System.out.printf("Big blind is %d.%n", bigBlind);
+                currentBet = bigBlind;
+            } else {
+                placeBet(currentPlayer, bigBlind);
+                System.out.printf("%s posts big blind of %d.%n", currentPlayer.getName(), currentBet);
+            }
+            
             currentPlayer = table.getNextActivePlayer(currentPlayer);
         }
 
-        /**
-         * TODO: handle side pots/inability to match bet
-         */
         do {
+            int minimumBet = bigBlind;
+            if (currentPlayer.getStackValue() < minimumBet) {
+                minimumBet = currentPlayer.getStackValue();
+            }
+
+            /**
+             * add logic for situation where all but one player is all in
+             * so that even the one player who is in passes;
+             * should be second condition to check for
+             * create separate method boolean lastPlayerStanding(Player player)
+             */
             PlayerAction action;
             EnumSet<PlayerAction> validActions;
-            if (currentPlayer.getStackValue() + playerBets.get(currentPlayer) <= currentBet) {
+            if (currentPlayer.getStackValue() == 0) {
+                // player is already all in
+                validActions = null;
+            } else if (currentPlayer.getStackValue() + playerBets.get(currentPlayer) < currentBet) {
+                // player cannot match the current bet
                 validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.FOLD);
-            } else if (currentPlayer.isBigBlind() && currentBet == bigBlind) {
-                validActions = EnumSet.of(PlayerAction.CHECK, PlayerAction.RAISE, PlayerAction.ALL_IN, PlayerAction.FOLD);
-            } else if (currentBet > 0) {
-                validActions = EnumSet.of(PlayerAction.CALL, PlayerAction.RAISE, PlayerAction.ALL_IN, PlayerAction.FOLD);
+                // TODO: handle side pots
+            } else if (currentPlayer.getStackValue() + playerBets.get(currentPlayer) == currentBet) {
+                // player can match the current bet but must go all in to do so
+                validActions = EnumSet.of(PlayerAction.CALL, PlayerAction.FOLD);
+            } else if (minimumBet < bigBlind && playerBets.get(currentPlayer) == currentBet) {
+                // betting would cause the player to go all in
+                validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.CHECK, PlayerAction.FOLD);
+            } else if (minimumBet < bigBlind) {
+                // raising would cause the player to go all in
+                validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.CALL, PlayerAction.FOLD);
+            } else if (currentBet > 0 && playerBets.get(currentPlayer) == currentBet) {
+                // player has placed a bet already as the big blind, and there are no other bets
+                validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.RAISE, PlayerAction.CHECK, PlayerAction.FOLD);
+            } else if (currentBet == 0) {
+                // no betting has yet occurred and player can bet the big blind amount without going all in
+                validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.BET, PlayerAction.CHECK, PlayerAction.FOLD);
             } else {
-                validActions = EnumSet.of(PlayerAction.CHECK, PlayerAction.BET, PlayerAction.ALL_IN, PlayerAction.FOLD);
+                // a bet has already been placed and player can raise by the big blind amount without going all in
+                validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.RAISE, PlayerAction.CALL, PlayerAction.FOLD);
             }
             action = PlayerAction.getActionFromScanner(in, currentPlayer, validActions, getBetsTotal(), currentBet);
 
-            int existingBet = playerBets.get(currentPlayer);
-            int allInAmount = currentPlayer.getStackValue() + existingBet;
-
             switch (action) {
-                case BET: { // refactor to utilize increaseBet() method
-                    int betAmount = getAmount(currentPlayer, bigBlind, currentPlayer.getStackValue());
-                    currentBet = betAmount;
-                    currentPlayer.removeFromStack(betAmount);
-                    playerBets.put(currentPlayer, betAmount);
+                case PASS: {
+                    break;
+                }
+                case BET: {
+                    int betAmount = getBetAmount(currentPlayer, minimumBet);
+                    placeBet(currentPlayer, betAmount);
                     System.out.printf("%s bets %d%n", currentPlayer.getName(), betAmount);
                     setTurnsIncomplete();
                     break;
                 }
-                case RAISE: { // refactor to utilize increaseBet() method
-                    int minRaise = currentBet + bigBlind;
-                    int raiseAmount = getAmount(currentPlayer, minRaise, allInAmount);
-                    currentBet = raiseAmount;
-                    currentPlayer.removeFromStack(raiseAmount - existingBet);
-                    playerBets.put(currentPlayer, raiseAmount);
+                case RAISE: {
+                    int minRaise = currentBet + minimumBet;
+                    int raiseAmount = getBetAmount(currentPlayer, minRaise);
+                    placeBet(currentPlayer, raiseAmount);
                     System.out.printf("%s raises to %d%n", currentPlayer.getName(), raiseAmount);
                     setTurnsIncomplete();
                     break;
                 }
                 case CALL: {
-                    currentPlayer.removeFromStack(currentBet - playerBets.get(currentPlayer));
-                    playerBets.put(currentPlayer, currentBet);
+                    placeBet(currentPlayer, currentBet);
                     System.out.printf("%s calls%n", currentPlayer.getName());
                     break;
                 }
@@ -107,14 +140,14 @@ class BettingRound {
                     break;
                 }
                 case ALL_IN: {
-                    if (allInAmount > currentBet) { // refactor to utilize increaseBet() method
-                        currentBet = allInAmount;
+                    if (currentPlayer.getStackValue() + playerBets.get(currentPlayer) > currentBet) {
+                        placeBet(currentPlayer, currentPlayer.getStackValue() + playerBets.get(currentPlayer));
                         setTurnsIncomplete();
-                    } else if (allInAmount < currentBet) {
+                    } else if (currentPlayer.getStackValue() + playerBets.get(currentPlayer) < currentBet) {
                         // TODO: create side pots
+                        placeBet(currentPlayer, currentPlayer.getStackValue() + playerBets.get(currentPlayer));
+                        setTurnsIncomplete();
                     }
-                    currentPlayer.removeFromStack(allInAmount - existingBet);
-                    playerBets.put(currentPlayer, allInAmount);
                     System.out.printf("%s goes all in%n", currentPlayer.getName());
                     break;
                 }
@@ -148,11 +181,13 @@ class BettingRound {
         return false;
     }
 
-    private int getAmount(Player player, int min, int max) {
+    private int getBetAmount(Player player, int min) {
+        int max = player.getStackValue() + playerBets.get(player);
         boolean isValidAmount;
         int amount = 0;
+
         do {
-            System.out.printf("How many chips would you like to bet/raise? (min %d, max %d)%n", min, max);
+            System.out.printf("How much would you like to bet/raise? (min %d, max %d)%n", min, max);
             String amountString = in.nextLine();
             try {
                 amount = Integer.parseInt(amountString);
@@ -174,16 +209,15 @@ class BettingRound {
     }
 
     /**
-     * resets the going bet for the table, tracks who made the last bet/raise,
-     * and transfers the player's chips to their local betting pot
-     * @param player player who is raising/starting the betting
+     * sets the current bet for the table and transfers the player's
+     * chips to their local betting pot
+     * @param player player who is betting/calling
      * @param betAmount total amount of the bet
-     * @param previousBet amount player had previously contributed towards the bet
      */
-    private void increaseBet(Player player, int betAmount, int previousBet) {
+    private void placeBet(Player player, int betAmount) {
         currentBet = betAmount;
 
-        int transferAmount = betAmount - previousBet;
+        int transferAmount = betAmount - playerBets.get(player);
         player.removeFromStack(transferAmount);
         playerBets.put(player, betAmount);
     }

@@ -42,11 +42,20 @@ class Game {
     }
 
     public void play() {
-        // TODO: Play more than one round
-        
-        playRound();
+        while (!gameOver()) {
+            playRound();
+            table.moveDealerToken();
+            System.out.println("");
+        }
 
-        table.moveDealerToken();
+        Player gameWinner = null;
+        for (Player player : players) {
+            if (!player.isBusted()) {
+                gameWinner = player;
+            }
+        }
+        
+        System.out.printf("%s has won the game.", gameWinner.getName());
     }
 
     public Player getNextPlayer(Player previousPlayer) {
@@ -59,7 +68,20 @@ class Game {
         return nextPlayer;
     }
 
-    private static String[] getPlayerNames(Scanner in){
+    private boolean gameOver() {
+        int unbustedPlayers = 0;
+        for (Player player : players) {
+            if (!player.isBusted()) {
+                unbustedPlayers++;
+            }
+            if (unbustedPlayers > 1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static String[] getPlayerNames(Scanner in) {
         boolean isValidPlayerCount;
         int playerCount = 0;
         do {
@@ -75,7 +97,7 @@ class Game {
             } catch (Exception e) {
                 isValidPlayerCount = false;
             }
-            if(!isValidPlayerCount) {
+            if (!isValidPlayerCount) {
                 System.out.println("Invalid input");
             }
 
@@ -90,11 +112,11 @@ class Game {
                 playerNames[i] = playerName;
                 nameIsUnique = true;
                 for (int j = i; j > 0; j--) {
-                    if (playerName.equals(playerNames[j-1])) {
+                    if (playerName.equals(playerNames[j - 1])) {
                         nameIsUnique = false;
                         System.out.println("Invalid input - name must be unique");
                     }
-                }               
+                }
             } while (!nameIsUnique);
         }
         return playerNames;
@@ -116,14 +138,14 @@ class Game {
             } catch (Exception e) {
                 isValidAmount = false;
             }
-            if(!isValidAmount) {
+            if (!isValidAmount) {
                 System.out.println("Invalid input");
             }
 
         } while (!isValidAmount);
         return startCash;
     }
-    
+
     private void playRound() {
         List<Player> roundWinners = new ArrayList<>();
 
@@ -150,6 +172,13 @@ class Game {
         // distribute winnings and announce winners
         distributePot(roundWinners, table.getCenterPot());
         announceRoundWinners(roundWinners, table.getCenterPot());
+
+        // bust players with empty stacks
+        for (Player player : players) {
+            if (player.getStackValue() == 0) {
+                player.bust();
+            }
+        }
     }
 
     private void determineRoundWinners(List<Player> winners) {
@@ -196,7 +225,7 @@ class Game {
     private void announceRoundWinners(List<Player> winners, int pot) {
         if (winners.size() == 1) {
             Player winner = winners.get(0);
-            System.out.printf("Winner is %s%n", winner.getName());
+            System.out.printf("%s wins %d%n", winner.getName(), pot);
         } else {
             System.out.print("Winners are: ");
             for (Player winner : winners) {
