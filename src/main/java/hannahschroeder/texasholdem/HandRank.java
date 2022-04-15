@@ -25,7 +25,7 @@ public enum HandRank {
         switch (handRank) {
             case HIGHCARD: return String.format("high card %s", hand.highCard().rank().toString());
             case PAIR: return String.format("pair of %s's", HandRank.getNKindRank(hand, 2).toString());
-            case TWOPAIR: return String.format("two pair, %s's and %s's", HandRank.getRankListByCount(hand, 2).get(0).toString(), HandRank.getRankListByCount(hand, 2).get(1).toString());
+            case TWOPAIR: return String.format("two pair, %s's and %s's", HandRank.getNKindRank(hand, 2).toString(), HandRank.getLowPairRank(hand).toString());
             case THREEOFAKIND: return String.format("three of a kind, %s's", HandRank.getNKindRank(hand, 3).toString());
             case STRAIGHT: return String.format("straight, %s high", hand.highCard().rank().toString());
             case FLUSH: return String.format("flush, %s high", hand.highCard().rank().toString());
@@ -66,7 +66,7 @@ public enum HandRank {
     }
 
     /**
-     * comparison method for when hands are the same rank
+     * comparison method for when hands are the same Rank
      * @param handRank
      * @param hand1
      * @param hand2
@@ -108,14 +108,9 @@ public enum HandRank {
     }
 
     private static boolean isFourOfAKind(Hand hand) {
-            for (Rank rank : Rank.values()) {
-            int count = 0;
-            for (Card card : hand.getCards()) {
-                if (card.rank() == rank) {
-                    count++;
-                }
-            }
-            if (count == 4) {
+        int[] rankCount = getRankCount(hand);
+        for (int i = 0; i < rankCount.length; i++) {
+            if (rankCount[i] == 4) {
                 return true;
             }
         }
@@ -163,57 +158,35 @@ public enum HandRank {
     }
 
     private static boolean isThreeOfAKind(Hand hand) {
-        for (Rank rank : Rank.values()) {
-            int count = 0;
-            for (Card card : hand.getCards()) {
-                if (card.rank() == rank) {
-                    count++;
-                }
-            }
-            if (count == 3) {
+        int[] rankCount = getRankCount(hand);
+        for (int i = 0; i < rankCount.length; i++) {
+            if (rankCount[i] == 3) {
                 return true;
             }
         }
-        
+
         return false;
     }
 
-    // TODO: Replace contents of isTwoPair and isPair
-    //       with a function that counts pairs and use
-    //       its result to decide if you have 0, 1 or
-    //       2 pairs in a hand.
-    //       (Consider also looking at the getNKindRank
-    //       for this purpose, as it's already counting
-    //       numbers of cards in hand)
     private static boolean isTwoPair(Hand hand) {
         int pairs = 0;
-        for (Rank rank : Rank.values()) {
-            int count = 0;
-            for (Card card : hand.getCards()) {
-                if (card.rank() == rank) {
-                    count++;
-                }
-            }
-            if (count == 2) {
+        int[] rankCount = getRankCount(hand);
+        for (int i = 0; i < rankCount.length; i++) {
+            if (rankCount[i] == 2) {
                 pairs++;
-                if (pairs == 2) {
-                    return true;
-                }
             }
         }
 
+        if (pairs == 2) {
+            return true;
+        }
         return false;
     }
 
     private static boolean isPair(Hand hand) {
-        for (Rank rank : Rank.values()) {
-            int count = 0;
-            for (Card card : hand.getCards()) {
-                if (card.rank() == rank) {
-                    count++;
-                }
-            }
-            if (count == 2) {
+        int[] rankCount = getRankCount(hand);
+        for (int i = 0; i < rankCount.length; i++) {
+            if (rankCount[i] == 2) {
                 return true;
             }
         }
@@ -222,10 +195,16 @@ public enum HandRank {
     }
 
     private static int compareFourOfAKind(Hand hand1, Hand hand2) {
-        int hand1SetValue = getNKindRank(hand1, 4).value();
-        int hand2SetValue = getNKindRank(hand2, 4).value();
+        int hand1SetValue = getNKindRankValue(hand1, 4);
+        int hand2SetValue = getNKindRankValue(hand2, 4);
 
-        return hand1SetValue - hand2SetValue;
+        if (hand1SetValue != hand2SetValue) {
+            return hand1SetValue - hand2SetValue;
+        } else {
+            Hand hand1Kickers = getKickers(hand1);
+            Hand hand2Kickers = getKickers(hand2);
+            return compareHighCard(hand1Kickers, hand2Kickers);
+        }
     }
 
     private static int compareStraight(Hand hand1, Hand hand2) {
@@ -246,78 +225,65 @@ public enum HandRank {
     }
 
     private static int compareThreeOfAKind(Hand hand1, Hand hand2) {
-        int hand1SetValue = getNKindRank(hand1, 3).value();
-        int hand2SetValue = getNKindRank(hand2, 3).value();
+        int hand1SetValue = getNKindRankValue(hand1, 3);
+        int hand2SetValue = getNKindRankValue(hand2, 3);
 
-        return hand1SetValue - hand2SetValue;
+        if (hand1SetValue != hand2SetValue) {
+            return hand1SetValue - hand2SetValue;
+        } else {
+            Hand hand1Kickers = getKickers(hand1);
+            Hand hand2Kickers = getKickers(hand2);
+            return compareHighCard(hand1Kickers, hand2Kickers);
+        }
     }
 
     private static int compareTwoPair(Hand hand1, Hand hand2) {
-        List<Rank> hand1RankList = getRankListByCount(hand1, 2);
-        Collections.sort(hand1RankList, Collections.reverseOrder());
-        int hand1GreaterPair = hand1RankList.get(0).value();
+        int hand1SetValue = getNKindRankValue(hand1, 2);
+        int hand2SetValue = getNKindRankValue(hand2, 2);
 
-        List<Rank> hand2RankList = getRankListByCount(hand2, 2);
-        Collections.sort(hand2RankList, Collections.reverseOrder());
-        int hand2GreaterPair = hand2RankList.get(0).value();
+        if (hand1SetValue != hand2SetValue) {
+            return hand1SetValue - hand2SetValue;
+        } else {
+            Hand newHand1 = removeHighPair(hand1);
+            Hand newHand2 = removeHighPair(hand2);
 
-        if (hand1GreaterPair != hand2GreaterPair) {
-            return hand1GreaterPair - hand2GreaterPair;
-        }
+            hand1SetValue = getNKindRankValue(newHand1, 2);
+            hand2SetValue = getNKindRankValue(newHand2, 2);
 
-        int hand1LesserPair = hand1RankList.get(1).value();
-        int hand2LesserPair = hand2RankList.get(1).value();
-        
-        if (hand1LesserPair != hand2LesserPair) {
-            return hand1LesserPair - hand2LesserPair;
-        }
-
-        int hand1Kicker = 0;
-        int hand2Kicker = 0;
-
-        for (int value : hand1.getSortedRankValues()) {
-            if (value != hand1GreaterPair && value != hand1LesserPair) {
-                hand1Kicker = value;
+            if (hand1SetValue != hand2SetValue) {
+                return hand1SetValue - hand2SetValue;
+            } else {
+                Hand hand1Kickers = getKickers(newHand1);
+                Hand hand2Kickers = getKickers(newHand2);
+                return compareHighCard(hand1Kickers, hand2Kickers);
             }
         }
+    }
 
-        for (int value : hand2.getSortedRankValues()) {
-            if (value != hand2GreaterPair && value != hand2LesserPair) {
-                hand2Kicker = value;
+    // TODO: ask Alex, should I be copying the cards?
+    private static Hand removeHighPair(Hand hand) {
+        int highPairValue = getNKindRankValue(hand, 2);
+        List<Card> cards = hand.getCards(); // copy cards?
+        Hand newHand = new Hand();
+        for (Card card : cards) {
+            if (card.rank().value() != highPairValue) {
+                newHand.addCard(card);
             }
         }
-        
-        return hand1Kicker - hand2Kicker;
+        return newHand;
     }
 
     private static int comparePair(Hand hand1, Hand hand2) {
-        int hand1SetValue = getNKindRank(hand1, 2).value();
-        int hand2SetValue = getNKindRank(hand2, 2).value();
-        
+        int hand1SetValue = getNKindRankValue(hand1, 2);
+        int hand2SetValue = getNKindRankValue(hand2, 2);
+
         if (hand1SetValue != hand2SetValue) {
             return hand1SetValue - hand2SetValue;
+        } else {
+            Hand hand1Kickers = getKickers(hand1);
+            Hand hand2Kickers = getKickers(hand2);
+            return compareHighCard(hand1Kickers, hand2Kickers);
         }
-
-        int[] hand1Kickers = new int[3];
-        int[] hand2Kickers = new int[3];
-
-        int i = 0;
-        for (int value : hand1.getSortedRankValues()) {
-            if (value != hand1SetValue) {
-                hand1Kickers[i] = value;
-                i++;
-            }
-        }
-        
-        i = 0;
-        for (int value : hand2.getSortedRankValues()) {
-            if (value != hand2SetValue) {
-                hand2Kickers[i] = value;
-                i++;
-            }
-        }
-        
-        return compareHighCard(hand1Kickers, hand2Kickers);
     }
 
     private static int compareHighCard(Hand hand1, Hand hand2) {
@@ -336,37 +302,49 @@ public enum HandRank {
         return 0;
     }
 
+    private static Hand getKickers(Hand hand) {
+        int[] rankCount = getRankCount(hand);
+        Hand newHand = new Hand();
+        List<Card> cards = hand.getCards();
+        for (Card card : cards) {
+            int rankValue = card.rank().value();
+            if (rankCount[rankValue - 2] == 1) {
+                newHand.addCard(card);
+            }
+        }
+
+        return newHand;
+    }
+
+    private static int getNKindRankValue(Hand hand, int count) {
+        int cardRankValue = 0;
+        int[] rankCount = getRankCount(hand);
+        for (int i = 12; i >= 0; i--) {
+            if (rankCount[i] == count) {
+                cardRankValue = i + 2;
+            }
+        }
+
+        return cardRankValue;
+    }
+
     private static Rank getNKindRank(Hand hand, int count) {
-        List<Rank> rankList = getRankListByCount(hand, count);
-        return rankList.get(0);
+        int rankValue = getNKindRankValue(hand, count);
+        return Rank.byValue(rankValue);
     }
 
-    private static List<Rank> getRankListByCount(Hand hand, int count) {
-        HashMap<Rank, Integer> map = getRankCountMap(hand);
-        List<Rank> ranks = new ArrayList<>();
-        for (Map.Entry<Rank, Integer> entry : map.entrySet()) {
-            if (entry.getValue() == count) {
-                ranks.add(entry.getKey());
-            }
-        }
-
-        Collections.sort(ranks, Collections.reverseOrder());
-
-        return ranks;
+    private static Rank getLowPairRank(Hand hand) {
+        Hand newHand = removeHighPair(hand);
+        return getNKindRank(newHand, 2);
     }
 
-    private static HashMap<Rank, Integer> getRankCountMap(Hand hand) {
-        HashMap<Rank, Integer> rankCountMap = new HashMap<>();
-
-        for (Card card : hand.getCards()) {
-            if (rankCountMap.containsKey(card.rank())) {
-                int oldCount = rankCountMap.get(card.rank());
-                rankCountMap.put(card.rank(), oldCount + 1);
-            } else {
-                rankCountMap.put(card.rank(), 1);
-            }
+    private static int[] getRankCount(Hand hand) {
+        int[] rankCount = new int[13];
+        List<Card> cards = hand.getCards();
+        for (Card card : cards) {
+            int rankValue = card.rank().value();
+            rankCount[rankValue - 2]++;
         }
-        
-        return rankCountMap;
+        return rankCount;
     }
 }

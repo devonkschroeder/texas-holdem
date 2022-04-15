@@ -21,6 +21,15 @@ public enum Rank {
         this.value = value;
     }
 
+    public static Rank byValue(int value) {
+        for (Rank rank : Rank.values()) {
+            if (rank.value == value) {
+                return rank;
+            }
+        }
+        return null;
+    }
+
     public int value() {
         return value;
     }
