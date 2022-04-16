@@ -44,7 +44,9 @@ class Game {
     public void play() {
         while (!gameOver()) {
             playRound();
-            table.moveDealerToken();
+            if (!gameOver()) {
+                table.moveDealerToken();
+            }
             System.out.println("");
         }
 
@@ -55,7 +57,7 @@ class Game {
             }
         }
         
-        System.out.printf("%s has won the game.", gameWinner.getName());
+        System.out.printf("%s has won the game.%n", gameWinner.getName());
     }
 
     public Player getNextPlayer(Player previousPlayer) {
@@ -170,8 +172,9 @@ class Game {
         }
 
         // distribute winnings and announce winners
-        distributePot(roundWinners, table.getCenterPot());
-        announceRoundWinners(roundWinners, table.getCenterPot());
+        distributePots(roundWinners, table.getPots());
+        announceRoundWinners(roundWinners);
+        transferWinnings(roundWinners);
 
         // bust players with empty stacks
         for (Player player : players) {
@@ -197,40 +200,22 @@ class Game {
         }
     }
 
-    // TODO: return winners & amount they won as Map
-    private void distributePot(List<Player> winners, int pot) {
-        int winnerCount = winners.size();
-        int winnings = pot / winnerCount;
-        int remainder = pot % winnerCount;
-        for (Player winner : winners) {
-            winner.addToStack(winnings);
-        }
-        if (remainder != 0) {
-            Player dealer = table.getDealer();
-            Player player = getNextPlayer(dealer);
-            do {
-                while (!winners.contains(player)) {
-                    Player next = getNextPlayer(player);
-                    player = next;
-                }
-                player.addToStack(1);
-                remainder--;
-                Player next = getNextPlayer(player);
-                player = next;
-            } while (remainder > 0);
+    private void distributePots(List<Player> roundWinners, List<Pot> pots) {
+        for (Pot pot : pots) {
+            pot.distribute(roundWinners);
         }
     }
 
-    // TODO: modify to include information about amounts won
-    private void announceRoundWinners(List<Player> winners, int pot) {
-        if (winners.size() == 1) {
-            Player winner = winners.get(0);
-            System.out.printf("%s wins %d%n", winner.getName(), pot);
-        } else {
-            System.out.print("Winners are: ");
-            for (Player winner : winners) {
-                System.out.printf("%s%n", winner.getName());
-            }
+    private void announceRoundWinners(List<Player> roundWinners) {
+        for (Player winner : roundWinners) {
+            System.out.printf("%s wins %d%n", winner.getName(), winner.getWinnings());
+        }
+    }
+
+    private void transferWinnings(List<Player> roundWinners) {
+        for (Player player : roundWinners) {
+            player.addToStack(player.getWinnings());
+            player.setWinnings(0);
         }
     }
 }

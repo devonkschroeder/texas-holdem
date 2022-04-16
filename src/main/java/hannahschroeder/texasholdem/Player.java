@@ -31,6 +31,7 @@ class Player {
     private String name;
     private int id;
     private int stack;
+    private int winnings = 0;
     private Hand pocket;
     private Hand finalHand;
     private boolean isFolded;
@@ -53,6 +54,14 @@ class Player {
 
     public int getId() {
         return id;
+    }
+
+    public int getWinnings() {
+        return winnings;
+    }
+
+    public void setWinnings(int amount) {
+        winnings = amount;
     }
 
     public void resetHand() {

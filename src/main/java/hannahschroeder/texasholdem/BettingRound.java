@@ -232,8 +232,8 @@ class BettingRound {
 
     private void moveBetsToCenterPot() {
         int bets = getBetsTotal();
-        int pot = table.getCenterPot();
-        table.setCenterPot(pot + bets);
+        int potValue = table.getCenterPot().getTotal();
+        table.setCenterPot(potValue + bets);
     }
 
     /**

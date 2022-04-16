@@ -8,7 +8,8 @@ class Table {
     private Game game;
     private List<Player> players;
     private int startCash;
-    private int centerPot = 0;
+    private List<Pot> pots = new ArrayList<>();
+    private Pot centerPot = new Pot(this, 0);
     private int smallBlind = 25;
     private int dealerToken = 0;
     private Hand communityCards;
@@ -19,23 +20,27 @@ class Table {
         this.game = game;
         this.players = players;
         this.startCash = startCash;
+        pots.add(centerPot);
         currentStage = Stage.PREFLOP;
         deck = new Deck(true);
         communityCards = new Hand();
     }
 
     public void resetTable() {
-        for (Player player : players) {
+        pots = new ArrayList<>();
+        centerPot = new Pot(this, 0);
+        pots.add(centerPot);
+        for (Player player : players) {            
             if (!player.isBusted()) {
                 player.setActive();
                 player.resetHand();
                 player.setBigBlind(false);
+                centerPot.addPotentialWinner(player);
             }
         }
         currentStage = Stage.PREFLOP;
         deck = new Deck(true);
         communityCards = new Hand();
-        centerPot = 0;
     }
 
     public List<Player> getAllPlayers() {
@@ -82,12 +87,16 @@ class Table {
         return smallBlind;
     }
 
-    public int getCenterPot() {
+    public Pot getCenterPot() {
         return centerPot;
     }
 
     public void setCenterPot(int amount) {
-        centerPot = amount;
+        centerPot.setTotal(amount);
+    }
+
+    public List<Pot> getPots() {
+        return pots;
     }
 
     public Player getDealer() {
@@ -210,7 +219,7 @@ class Table {
                 throw new RuntimeException("Unexpected stage");
         }
 
-        System.out.printf("Pot: %d%n", getCenterPot());
+        System.out.printf("Pot: %d%n", getCenterPot().getTotal());
         for (Player player : getActivePlayers()) {
             System.out.printf("%s: %d%n", player.getName(), player.getStackValue());
         }
