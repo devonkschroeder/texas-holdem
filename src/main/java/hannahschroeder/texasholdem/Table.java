@@ -174,6 +174,8 @@ class Table {
      * false when someone has won the hand and play stops
      */
     public boolean playStage(Scanner in, List<Player> roundWinners) {
+        System.out.println();
+        
         switch (currentStage) {
             case PREFLOP:
                 // deal to active players

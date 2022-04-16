@@ -50,11 +50,11 @@ public enum HandRank {
             return FLUSH;
         } else if (isStraight(hand)) {
             return STRAIGHT;
-        } else if (isThreeOfAKind(hand)) {
+        } else if (hasThreeOfAKind(hand)) {
             return THREEOFAKIND;
         } else if (isTwoPair(hand)) {
             return TWOPAIR;
-        } else if (isPair(hand)) {
+        } else if (hasPair(hand)) {
             return PAIR;
         } else {
             return HIGHCARD;
@@ -115,7 +115,7 @@ public enum HandRank {
     }
 
     private static boolean isFullHouse(Hand hand) {
-        return isThreeOfAKind(hand) && isPair(hand);
+        return hasThreeOfAKind(hand) && hasPair(hand);
     }
 
     private static boolean isFlush(Hand hand) {
@@ -153,7 +153,7 @@ public enum HandRank {
         return true;
     }
 
-    private static boolean isThreeOfAKind(Hand hand) {
+    private static boolean hasThreeOfAKind(Hand hand) {
         int[] rankCount = getRankCount(hand);
         for (int i = 0; i < rankCount.length; i++) {
             if (rankCount[i] == 3) {
@@ -179,7 +179,7 @@ public enum HandRank {
         return false;
     }
 
-    private static boolean isPair(Hand hand) {
+    private static boolean hasPair(Hand hand) {
         int[] rankCount = getRankCount(hand);
         for (int i = 0; i < rankCount.length; i++) {
             if (rankCount[i] == 2) {
