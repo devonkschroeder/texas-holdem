@@ -9,7 +9,6 @@ class Table {
     private List<Player> players;
     private int startCash;
     private List<Pot> pots = new ArrayList<>();
-    private Pot centerPot = new Pot(this, 0);
     private int smallBlind = 25;
     private int dealerToken = 0;
     private Hand communityCards;
@@ -20,7 +19,7 @@ class Table {
         this.game = game;
         this.players = players;
         this.startCash = startCash;
-        pots.add(centerPot);
+        pots.add(new Pot(this, 0));
         currentStage = Stage.PREFLOP;
         deck = new Deck(true);
         communityCards = new Hand();
@@ -28,14 +27,13 @@ class Table {
 
     public void resetTable() {
         pots = new ArrayList<>();
-        centerPot = new Pot(this, 0);
-        pots.add(centerPot);
+        pots.add(new Pot(this, 0));
         for (Player player : players) {            
             if (!player.isBusted()) {
                 player.setActive();
                 player.resetHand();
                 player.setBigBlind(false);
-                centerPot.addPotentialWinner(player);
+                pots.get(0).addPotentialWinner(player);
             }
         }
         currentStage = Stage.PREFLOP;
@@ -85,14 +83,6 @@ class Table {
 
     public int getSmallBlind() {
         return smallBlind;
-    }
-
-    public Pot getCenterPot() {
-        return centerPot;
-    }
-
-    public void setCenterPot(int amount) {
-        centerPot.setTotal(amount);
     }
 
     public List<Pot> getPots() {
@@ -219,7 +209,14 @@ class Table {
                 throw new RuntimeException("Unexpected stage");
         }
 
-        System.out.printf("Pot: %d%n", getCenterPot().getTotal());
+        for (int i = 0; i < pots.size(); i++) {
+            if (i == 0) {
+                System.out.printf("Pot: %d%n", pots.get(i).getTotal());
+            } else {
+                System.out.printf("Side pot: %d%n", pots.get(i).getTotal());
+            }
+        }
+        
         for (Player player : getActivePlayers()) {
             System.out.printf("%s: %d%n", player.getName(), player.getStackValue());
         }

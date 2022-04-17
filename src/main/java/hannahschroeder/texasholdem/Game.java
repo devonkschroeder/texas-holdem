@@ -185,24 +185,35 @@ class Game {
     }
 
     private void determineRoundWinners(List<Player> winners) {
-        for (int i = 0; i < players.size(); i++) {
-            Player player = players.get(i);
-            if (!player.isFolded() && !player.isBusted()) {
-                if (winners.size() == 0) {
-                    winners.add(player);
-                } else if (winners.get(0).getFinalHand().compareTo(player.getFinalHand()) == 0) {
-                    winners.add(player);
-                } else if (winners.get(0).getFinalHand().compareTo(player.getFinalHand()) < 0) {
-                    winners.clear();
-                    winners.add(player);
-                }
+        for (Pot pot : table.getPots()) {
+            determinePotWinners(winners, pot);
+        }
+    }
+
+    private void determinePotWinners(List<Player> winners, Pot pot) {
+        List<Player> potentialWinners = pot.getPotentialWinners();
+        List<Player> potWinners = new ArrayList<>();
+        for (Player player : potentialWinners) {
+            if (potWinners.size() == 0) {
+                potWinners.add(player);
+            } else if (potWinners.get(0).getFinalHand().compareTo(player.getFinalHand()) == 0) {
+                potWinners.add(player);
+            } else if (potWinners.get(0).getFinalHand().compareTo(player.getFinalHand()) < 0) {
+                potWinners.clear();
+                potWinners.add(player);
+            }
+        }
+
+        for (Player player : potWinners) {
+            if (!winners.contains(player)) {
+                winners.add(player);
             }
         }
     }
 
-    private void distributePots(List<Player> roundWinners, List<Pot> pots) {
+    private void distributePots(List<Player> winners, List<Pot> pots) {
         for (Pot pot : pots) {
-            pot.distribute(roundWinners);
+            pot.distribute(winners);
         }
     }
 

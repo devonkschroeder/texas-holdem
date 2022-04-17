@@ -137,14 +137,14 @@ public enum HandRank {
     private static boolean isStraight(Hand hand) {
         int[] values = hand.getSortedRankValues();
 
-        int[] lowStraight = {2, 3, 4, 5, 14};
+        int[] lowStraight = {14, 5, 4, 3, 2};
         if (Arrays.equals(values, lowStraight)) {
             return true;
         }
 
         int value = values[0];
         for (int i = 1; i < Hand.FIVE_CARD_HAND; i++) {
-            if (values[i] != value + 1) {
+            if (values[i] != value - 1) {
                 return false;
             }
             value = values[i];
@@ -204,8 +204,8 @@ public enum HandRank {
     }
 
     private static int compareStraight(Hand hand1, Hand hand2) {
-        int[] lowAceStraight = {2, 3, 4, 5, 14};
-        int[] lowAceStraightFixed = {1, 2, 3, 4, 5};
+        int[] lowAceStraight = {14, 5, 4, 3, 2};
+        int[] lowAceStraightFixed = {5, 4, 3, 2, 1};
 
         int[] hand1Values = hand1.getSortedRankValues();
         int[] hand2Values = hand2.getSortedRankValues();
@@ -217,7 +217,7 @@ public enum HandRank {
             hand2Values = lowAceStraightFixed;
         }
         
-        return hand1Values[hand1Values.length - 1] - hand2Values[hand2Values.length - 1];
+        return hand1Values[0] - hand2Values[0];
     }
 
     private static int compareThreeOfAKind(Hand hand1, Hand hand2) {
@@ -256,10 +256,9 @@ public enum HandRank {
         }
     }
 
-    // TODO: ask Alex, should I be copying the cards?
     private static Hand removeHighPair(Hand hand) {
         int highPairValue = getNKindRankValue(hand, 2);
-        List<Card> cards = hand.getCards(); // copy cards?
+        List<Card> cards = hand.getCards();
         Hand newHand = new Hand();
         for (Card card : cards) {
             if (card.rank().value() != highPairValue) {
@@ -290,7 +289,7 @@ public enum HandRank {
     }
 
     private static int compareHighCard(int[] hand1Values, int[] hand2Values) {
-        for (int i = hand1Values.length - 1; i >= 0; i--) {
+        for (int i = 0; i < hand1Values.length; i++) {
             if (hand1Values[i] != hand2Values[i]) {
                 return hand1Values[i] - hand2Values[i];
             }

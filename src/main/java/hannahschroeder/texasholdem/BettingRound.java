@@ -1,9 +1,7 @@
 package hannahschroeder.texasholdem;
 
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
 class BettingRound {
@@ -13,7 +11,6 @@ class BettingRound {
     private List<Player> activePlayers;
     private Player dealer;
     private int currentBet = 0;
-    private Map<Player, Integer> playerBets = new HashMap<>();
     
     public BettingRound(Table table, Scanner in) {
         this.in = in;
@@ -23,7 +20,7 @@ class BettingRound {
         dealer = table.getDealer();
 
         for (Player player : activePlayers) {
-            playerBets.put(player, 0);
+            player.setBet(0);
             player.setCompletedTurn(false);
         }
     }
@@ -74,32 +71,28 @@ class BettingRound {
             if (currentPlayer.getStackValue() < minimumBet) {
                 minimumBet = currentPlayer.getStackValue();
             }
-
-            /**
-             * add logic for situation where all but one player is all in
-             * so that even the one player who is in passes;
-             * should be second condition to check for
-             * create separate method boolean lastPlayerStanding(Player player)
-             */
+            
             PlayerAction action;
             EnumSet<PlayerAction> validActions;
             if (currentPlayer.getStackValue() == 0) {
                 // player is already all in
                 validActions = null;
-            } else if (currentPlayer.getStackValue() + playerBets.get(currentPlayer) < currentBet) {
+            } else if (lastPlayerStanding(currentPlayer)) {
+                // player is the only active player that can bet
+                validActions = null;
+            } else if (currentPlayer.getStackValue() + currentPlayer.getBet() < currentBet) {
                 // player cannot match the current bet
                 validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.FOLD);
-                // TODO: handle side pots
-            } else if (currentPlayer.getStackValue() + playerBets.get(currentPlayer) == currentBet) {
+            } else if (currentPlayer.getStackValue() + currentPlayer.getBet() == currentBet) {
                 // player can match the current bet but must go all in to do so
                 validActions = EnumSet.of(PlayerAction.CALL, PlayerAction.FOLD);
-            } else if (minimumBet < bigBlind && playerBets.get(currentPlayer) == currentBet) {
+            } else if (minimumBet < bigBlind && currentPlayer.getBet() == currentBet) {
                 // betting would cause the player to go all in
                 validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.CHECK, PlayerAction.FOLD);
             } else if (minimumBet < bigBlind) {
                 // raising would cause the player to go all in
                 validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.CALL, PlayerAction.FOLD);
-            } else if (currentBet > 0 && playerBets.get(currentPlayer) == currentBet) {
+            } else if (currentBet > 0 && currentPlayer.getBet() == currentBet) {
                 // player has placed a bet already as the big blind, and there are no other bets
                 validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.RAISE, PlayerAction.CHECK, PlayerAction.FOLD);
             } else if (currentBet == 0) {
@@ -140,12 +133,11 @@ class BettingRound {
                     break;
                 }
                 case ALL_IN: {
-                    if (currentPlayer.getStackValue() + playerBets.get(currentPlayer) > currentBet) {
-                        placeBet(currentPlayer, currentPlayer.getStackValue() + playerBets.get(currentPlayer));
+                    if (currentPlayer.getStackValue() + currentPlayer.getBet() > currentBet) {
+                        placeBet(currentPlayer, currentPlayer.getStackValue() + currentPlayer.getBet());
                         setTurnsIncomplete();
-                    } else if (currentPlayer.getStackValue() + playerBets.get(currentPlayer) < currentBet) {
-                        // TODO: create side pots
-                        placeBet(currentPlayer, currentPlayer.getStackValue() + playerBets.get(currentPlayer));
+                    } else if (currentPlayer.getStackValue() + currentPlayer.getBet() < currentBet) {
+                        placeBet(currentPlayer, currentPlayer.getStackValue() + currentPlayer.getBet());
                         setTurnsIncomplete();
                     }
                     System.out.printf("%s goes all in%n", currentPlayer.getName());
@@ -153,6 +145,11 @@ class BettingRound {
                 }
                 case FOLD: {
                     System.out.printf("%s folds%n", currentPlayer.getName());
+                    for (Pot pot : table.getPots()) {
+                        if (pot.getPotentialWinners().contains(currentPlayer)) {
+                            pot.removePotentialWinner(currentPlayer);
+                        }
+                    }
                     currentPlayer.fold();
                 }
             }
@@ -165,9 +162,9 @@ class BettingRound {
 
             Player nextPlayer = table.getNextActivePlayer(currentPlayer);
             if (action == PlayerAction.FOLD) {
-                activePlayers.remove(currentPlayer);
                 currentPlayer = nextPlayer;
                 if (checkDefaultWin(roundWinners)) {
+                    moveBetsToPots();
                     return true;
                 }
             } else {
@@ -175,14 +172,28 @@ class BettingRound {
             }
         } while (!currentPlayer.completedTurn());
 
-        // TODO: handle side pot scenario
-        moveBetsToCenterPot();
-
+        moveBetsToPots();
         return false;
     }
 
+    private boolean lastPlayerStanding(Player currentPlayer) {
+        for (Player player : table.getActivePlayers()) {
+            if (!player.isFolded() && player.getStackValue() > 0) {
+                if (player != currentPlayer) {
+                    return false;
+                } else {
+                    if (currentPlayer.getBet() < currentBet) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
     private int getBetAmount(Player player, int min) {
-        int max = player.getStackValue() + playerBets.get(player);
+        int max = player.getStackValue() + player.getBet();
         boolean isValidAmount;
         int amount = 0;
 
@@ -217,23 +228,64 @@ class BettingRound {
     private void placeBet(Player player, int betAmount) {
         currentBet = betAmount;
 
-        int transferAmount = betAmount - playerBets.get(player);
+        int transferAmount = betAmount - player.getBet();
         player.removeFromStack(transferAmount);
-        playerBets.put(player, betAmount);
+        player.setBet(betAmount);
     }
 
     private int getBetsTotal() {
         int betsTotal = 0;
-        for (Map.Entry<Player, Integer> entry : playerBets.entrySet()) {
-            betsTotal += entry.getValue();
+        for (Player player : activePlayers) {
+            betsTotal += player.getBet();
         }
         return betsTotal;
     }
 
-    private void moveBetsToCenterPot() {
-        int bets = getBetsTotal();
-        int potValue = table.getCenterPot().getTotal();
-        table.setCenterPot(potValue + bets);
+    private void moveBetsToPots() {
+        List<Pot> pots = table.getPots();
+        int lowestBet = currentBet;
+        while (getBetsTotal() > 0) {
+            Pot currentPot = pots.get(pots.size() - 1);
+            for (Player player : currentPot.getPotentialWinners()) {
+                if (player.getBet() < lowestBet) {
+                    lowestBet = player.getBet();
+                }
+            }
+
+            // move lowestBet amount to current pot
+            for (Player player : activePlayers) {
+                int bet = player.getBet();
+                if (player.getBet() < lowestBet) {
+                    currentPot.addToPot(bet);
+                    player.setBet(0);
+                } else {
+                    currentPot.addToPot(lowestBet);
+                    player.setBet(bet - lowestBet);
+                }
+            }
+
+            // create side pot
+            Pot newPot = new Pot(table, 0);
+            if (getBetsTotal() > 0) {
+                pots.add(newPot);
+                // add potential winners of pot to pot
+                for (Player player : currentPot.getPotentialWinners()) {
+                    if (player.getBet() > 0) {
+                        newPot.addPotentialWinner(player);
+                    }
+                }
+            }
+
+            /**
+             * if the newest pot has the same potential winners as the 
+             * previous one, remove it.
+             */
+            if (currentPot.getPotentialWinners().containsAll(newPot.getPotentialWinners())
+                && newPot.getPotentialWinners().containsAll(currentPot.getPotentialWinners())) {
+                // combine pots
+                pots.remove(newPot);
+            }
+        }
     }
 
     /**
@@ -249,8 +301,8 @@ class BettingRound {
             winner.dontReveal();
             roundWinners.add(winner);
 
-            //put player bets into table's center pot
-            moveBetsToCenterPot();
+            //put player bets into table's pots
+            moveBetsToPots();
             return true;
         }
 

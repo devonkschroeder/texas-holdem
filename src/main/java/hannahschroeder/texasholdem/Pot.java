@@ -21,8 +21,16 @@ class Pot {
         potTotal = value;
     }
 
+    public void addToPot(int value) {
+        potTotal += value;
+    }
+
     public void addPotentialWinner(Player player) {
         potentialWinners.add(player);
+    }
+
+    public void removePotentialWinner (Player player) {
+        potentialWinners.remove(player);
     }
 
     public List<Player> getPotentialWinners() {
@@ -41,7 +49,7 @@ class Pot {
         int winnings = potTotal / winnerCount;
         int remainder = potTotal % winnerCount;
         for (Player player : potWinners) {
-            player.setWinnings(winnings);
+            player.addToWinnings(winnings);
         }
         if (remainder != 0) {
             Player dealer = table.getDealer();
@@ -51,7 +59,7 @@ class Pot {
                     Player next = table.getNextPlayer(player);
                     player = next;
                 }
-                player.setWinnings(player.getWinnings() + 1);
+                player.addToWinnings(1);
                 remainder--;
                 Player next = table.getNextPlayer(player);
                 player = next;

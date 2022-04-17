@@ -31,6 +31,7 @@ class Player {
     private String name;
     private int id;
     private int stack;
+    private int activeBet = 0;
     private int winnings = 0;
     private Hand pocket;
     private Hand finalHand;
@@ -56,12 +57,36 @@ class Player {
         return id;
     }
 
+    public int getStackValue() {
+        return stack;
+    }
+
+    public void removeFromStack(int value) {
+        stack -= value;
+    }
+
+    public void addToStack(int value) {
+        stack += value;
+    }
+
+    public int getBet() {
+        return activeBet;
+    }
+
+    public void setBet(int value) {
+        activeBet = value;
+    }
+
     public int getWinnings() {
         return winnings;
     }
 
     public void setWinnings(int amount) {
         winnings = amount;
+    }
+
+    public void addToWinnings(int amount) {
+        winnings += amount;
     }
 
     public void resetHand() {
@@ -103,18 +128,6 @@ class Player {
 
     public void setCompletedTurn(boolean bool) {
         completedTurn = bool;
-    }
-
-    public int getStackValue() {
-        return stack;
-    }
-
-    public void removeFromStack(int value) {
-        stack -= value;
-    }
-
-    public void addToStack(int value) {
-        stack += value;
     }
 
     public Hand getPrivateHand() {

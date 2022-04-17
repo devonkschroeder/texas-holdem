@@ -41,6 +41,7 @@ class Hand implements Comparable<Hand> {
     public int[] getSortedRankValues() {
         List<Card> sortedCards = copyCards();
         Collections.sort(sortedCards);
+        Collections.reverse(sortedCards);
         int[] values = new int[sortedCards.size()];
         for (int i = 0; i < sortedCards.size(); i++) {
             values[i] = sortedCards.get(i).value();
@@ -79,12 +80,12 @@ class Hand implements Comparable<Hand> {
 
     @Override
     public int compareTo(Hand hand) {
-        HandRank thisHandValue = HandRank.getHandRank(this);
-        HandRank otherHandValue = HandRank.getHandRank(hand);
-        if (thisHandValue != otherHandValue) {
-            return thisHandValue.compareTo(otherHandValue);
+        HandRank thisHandRank = HandRank.getHandRank(this);
+        HandRank otherHandRank = HandRank.getHandRank(hand);
+        if (thisHandRank != otherHandRank) {
+            return thisHandRank.compareTo(otherHandRank);
         } else {
-            return HandRank.compareHandRank(thisHandValue, this, hand);
+            return HandRank.compareHandRank(thisHandRank, this, hand);
         }
     }
 
