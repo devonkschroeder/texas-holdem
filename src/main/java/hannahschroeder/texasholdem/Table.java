@@ -216,7 +216,7 @@ class Table {
                 System.out.printf("Side pot: %d%n", pots.get(i).getTotal());
             }
         }
-        
+
         for (Player player : getActivePlayers()) {
             System.out.printf("%s: %d%n", player.getName(), player.getStackValue());
         }

@@ -96,4 +96,12 @@ class Hand implements Comparable<Hand> {
         }
         return copy;
     }
+
+    public static Hand parse(String text) {
+        Hand hand = new Hand();
+        for (String card : text.split(" ")) {
+            hand.addCard(Card.parse(card));
+        }
+        return hand;
+    }
 }

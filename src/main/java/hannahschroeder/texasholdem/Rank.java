@@ -45,4 +45,26 @@ public enum Rank {
 
 		return String.format("%d", value);
 	}
+
+    public static Rank parse(String text) {
+        Rank rank;
+        switch (text) {
+            case "A":
+                rank = ACE;
+                break;
+            case "K":
+                rank = KING;
+                break;
+            case "Q":
+                rank = QUEEN;
+                break;
+            case "J":
+                rank = JACK;
+                break;
+            default:
+                rank = byValue(Integer.parseInt(text));
+                break;
+        }
+        return rank;
+    }
 }

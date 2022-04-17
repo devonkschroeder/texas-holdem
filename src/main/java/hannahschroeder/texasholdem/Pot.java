@@ -7,6 +7,7 @@ class Pot {
     Table table;
     int potTotal;
     List<Player> potentialWinners = new ArrayList<>();
+    List<Player> winners = new ArrayList<>();
 
     public Pot(Table table, int startAmount) {
         this.table = table;
@@ -37,25 +38,22 @@ class Pot {
         return potentialWinners;
     }
 
-    public void distribute(List<Player> allWinners) {
-        List<Player> potWinners = new ArrayList<>();
-        for (Player player : allWinners) {
-            if (potentialWinners.contains(player)) {
-                potWinners.add(player);
-            }
-        }
+    public List<Player> getWinners() {
+        return winners;
+    }
 
-        int winnerCount = potWinners.size();
+    public void distribute() {
+        int winnerCount = winners.size();
         int winnings = potTotal / winnerCount;
         int remainder = potTotal % winnerCount;
-        for (Player player : potWinners) {
+        for (Player player : winners) {
             player.addToWinnings(winnings);
         }
         if (remainder != 0) {
             Player dealer = table.getDealer();
             Player player = table.getNextPlayer(dealer);
             do {
-                while (!potWinners.contains(player)) {
+                while (!winners.contains(player)) {
                     Player next = table.getNextPlayer(player);
                     player = next;
                 }
