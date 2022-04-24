@@ -6,18 +6,18 @@ import java.util.Scanner;
 
 class BettingRound {
     private Scanner in;
-    private Table table;
-    private List<Player> allPlayers;
+    private List<Pot> pots;
+    private Playerlist allPlayers;
     private List<Player> activePlayers;
     private Player dealer;
     private int currentBet = 0;
-    
-    public BettingRound(Table table, Scanner in) {
+
+    public BettingRound(List<Pot> pots, Playerlist players, Player dealer, Scanner in) {
+        this.pots = pots;
         this.in = in;
-        this.table = table;
-        allPlayers = table.getAllPlayers();
-        activePlayers = table.getActivePlayers();
-        dealer = table.getDealer();
+        allPlayers = players;
+        activePlayers = players.getActivePlayers();
+        this.dealer = dealer;
 
         for (Player player : activePlayers) {
             player.setBet(0);
@@ -27,15 +27,15 @@ class BettingRound {
 
     /**
      * plays a round of betting
-     * @param isPreFlop true if the betting round is the pre-flop
+     * 
+     * @param isPreFlop    true if the betting round is the pre-flop
      * @param roundWinners list of round winners
      * @return true if betting round resulted in a default win
      */
-    public boolean play(boolean isPreFlop, List<Player> roundWinners) {
+    public boolean play(int smallBlind, boolean isPreFlop, List<Player> roundWinners) {
         setTurnsIncomplete();
-        Player currentPlayer = table.getNextActivePlayer(dealer);
-        int smallBlind = table.getSmallBlind();
-        int bigBlind = 2*smallBlind;
+        Player currentPlayer = allPlayers.getNextActivePlayer(dealer);
+        int bigBlind = 2 * smallBlind;
 
         if (isPreFlop) {
             System.out.printf("%s is dealer.%n", dealer.getName());
@@ -49,7 +49,7 @@ class BettingRound {
                 System.out.printf("%s posts small blind of %d.%n", currentPlayer.getName(), currentBet);
             }
 
-            currentPlayer = table.getNextActivePlayer(currentPlayer);
+            currentPlayer = allPlayers.getNextActivePlayer(currentPlayer);
 
             // posting of big blind
             currentPlayer.setBigBlind(true);
@@ -62,8 +62,8 @@ class BettingRound {
                 placeBet(currentPlayer, bigBlind);
                 System.out.printf("%s posts big blind of %d.%n", currentPlayer.getName(), currentBet);
             }
-            
-            currentPlayer = table.getNextActivePlayer(currentPlayer);
+
+            currentPlayer = allPlayers.getNextActivePlayer(currentPlayer);
         }
 
         do {
@@ -71,7 +71,7 @@ class BettingRound {
             if (currentPlayer.getStackValue() < minimumBet) {
                 minimumBet = currentPlayer.getStackValue();
             }
-            
+
             PlayerAction action;
             EnumSet<PlayerAction> validActions;
             if (currentPlayer.getStackValue() == 0) {
@@ -94,13 +94,17 @@ class BettingRound {
                 validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.CALL, PlayerAction.FOLD);
             } else if (currentBet > 0 && currentPlayer.getBet() == currentBet) {
                 // player has placed a bet already as the big blind, and there are no other bets
-                validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.RAISE, PlayerAction.CHECK, PlayerAction.FOLD);
+                validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.RAISE, PlayerAction.CHECK,
+                        PlayerAction.FOLD);
             } else if (currentBet == 0) {
-                // no betting has yet occurred and player can bet the big blind amount without going all in
+                // no betting has yet occurred and player can bet the big blind amount without
+                // going all in
                 validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.BET, PlayerAction.CHECK, PlayerAction.FOLD);
             } else {
-                // a bet has already been placed and player can raise by the big blind amount without going all in
-                validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.RAISE, PlayerAction.CALL, PlayerAction.FOLD);
+                // a bet has already been placed and player can raise by the big blind amount
+                // without going all in
+                validActions = EnumSet.of(PlayerAction.ALL_IN, PlayerAction.RAISE, PlayerAction.CALL,
+                        PlayerAction.FOLD);
             }
             action = PlayerAction.getActionFromScanner(in, currentPlayer, validActions, getBetsTotal(), currentBet);
 
@@ -145,7 +149,7 @@ class BettingRound {
                 }
                 case FOLD: {
                     System.out.printf("%s folds%n", currentPlayer.getName());
-                    for (Pot pot : table.getPots()) {
+                    for (Pot pot : pots) {
                         if (pot.getPotentialWinners().contains(currentPlayer)) {
                             pot.removePotentialWinner(currentPlayer);
                         }
@@ -160,9 +164,11 @@ class BettingRound {
                 currentPlayer.setBigBlind(false);
             }
 
-            Player nextPlayer = table.getNextActivePlayer(currentPlayer);
+            Player nextPlayer = allPlayers.getNextActivePlayer(currentPlayer);
             if (action == PlayerAction.FOLD) {
                 currentPlayer = nextPlayer;
+                // TODO: Something goes wrong when last person folds
+                // before the end of the game
                 if (checkDefaultWin(roundWinners)) {
                     moveBetsToPots();
                     return true;
@@ -177,7 +183,7 @@ class BettingRound {
     }
 
     private boolean lastPlayerStanding(Player currentPlayer) {
-        for (Player player : table.getActivePlayers()) {
+        for (Player player : allPlayers.getActivePlayers()) {
             if (!player.isFolded() && player.getStackValue() > 0) {
                 if (player != currentPlayer) {
                     return false;
@@ -210,7 +216,7 @@ class BettingRound {
             } catch (Exception e) {
                 isValidAmount = false;
             }
-            if(!isValidAmount) {
+            if (!isValidAmount) {
                 System.out.println("Invalid input");
             }
 
@@ -222,7 +228,8 @@ class BettingRound {
     /**
      * sets the current bet for the table and transfers the player's
      * chips to their local betting pot
-     * @param player player who is betting/calling
+     * 
+     * @param player    player who is betting/calling
      * @param betAmount total amount of the bet
      */
     private void placeBet(Player player, int betAmount) {
@@ -242,7 +249,6 @@ class BettingRound {
     }
 
     private void moveBetsToPots() {
-        List<Pot> pots = table.getPots();
         int lowestBet = currentBet;
         while (getBetsTotal() > 0) {
             Pot currentPot = pots.get(pots.size() - 1);
@@ -265,7 +271,7 @@ class BettingRound {
             }
 
             // create side pot
-            Pot newPot = new Pot(table, 0);
+            Pot newPot = new Pot(0);
             if (getBetsTotal() > 0) {
                 pots.add(newPot);
                 // add potential winners of pot to pot
@@ -277,11 +283,11 @@ class BettingRound {
             }
 
             /**
-             * if the newest pot has the same potential winners as the 
+             * if the newest pot has the same potential winners as the
              * previous one, remove it.
              */
             if (currentPot.getPotentialWinners().containsAll(newPot.getPotentialWinners())
-                && newPot.getPotentialWinners().containsAll(currentPot.getPotentialWinners())) {
+                    && newPot.getPotentialWinners().containsAll(currentPot.getPotentialWinners())) {
                 // combine pots
                 pots.remove(newPot);
             }
@@ -301,7 +307,7 @@ class BettingRound {
             winner.dontReveal();
             roundWinners.add(winner);
 
-            //put player bets into table's pots
+            // put player bets into table's pots
             moveBetsToPots();
             return true;
         }
@@ -310,7 +316,7 @@ class BettingRound {
     }
 
     private void setTurnsIncomplete() {
-        for (Player player : allPlayers) {
+        for (Player player : allPlayers.getPlayers()) {
             if (!player.isFolded() && !player.isBusted() && player.getStackValue() > 0) {
                 player.setCompletedTurn(false);
             }

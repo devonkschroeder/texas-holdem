@@ -6,19 +6,16 @@ import java.util.Scanner;
 
 class Game {
     private Table table;
-    private int startCash;
-    private List<Player> players;
+    private Playerlist players;
     private Scanner in;
 
-    public Game(Scanner scanner, int startCash) {
-        this.startCash = startCash;
-        players = new ArrayList<>();
-        table = new Table(players, startCash, this);
+    public Game(Scanner scanner, int startCash, String[] playerNames) {
+        players = new Playerlist();
+        for (int i = 0; i < playerNames.length; i++) {
+            players.addPlayer(playerNames[i], startCash);
+        }
+        table = new Table(players, startCash);
         in = scanner;
-    }
-
-    public List<Player> getPlayers() {
-        return players;
     }
 
     public static void main(String[] args) {
@@ -27,18 +24,11 @@ class Game {
         String[] playerNames = getPlayerNames(in);
         int startCash = getStartCash(in);
 
-        Game game = new Game(in, startCash);
-        for (int i = 0; i < playerNames.length; i++) {
-            game.addPlayer(playerNames[i], i);
-        }
+        Game game = new Game(in, startCash, playerNames);
 
         game.play();
 
         in.close();
-    }
-
-    public void addPlayer(String playerName, int id) {
-        players.add(new Player(playerName, id, startCash));
     }
 
     public void play() {
@@ -51,7 +41,7 @@ class Game {
         }
 
         Player gameWinner = null;
-        for (Player player : players) {
+        for (Player player : players.getPlayers()) {
             if (!player.isBusted()) {
                 gameWinner = player;
             }
@@ -60,19 +50,9 @@ class Game {
         System.out.printf("%s has won the game.%n", gameWinner.getName());
     }
 
-    public Player getNextPlayer(Player previousPlayer) {
-        Player nextPlayer = null;
-        if (previousPlayer.getId() == players.size() - 1) {
-            nextPlayer = players.get(0);
-        } else {
-            nextPlayer = players.get(previousPlayer.getId() + 1);
-        }
-        return nextPlayer;
-    }
-
     private boolean gameOver() {
         int unbustedPlayers = 0;
-        for (Player player : players) {
+        for (Player player : players.getPlayers()) {
             if (!player.isBusted()) {
                 unbustedPlayers++;
             }
@@ -128,7 +108,7 @@ class Game {
         boolean isValidAmount;
         int startCash = 0;
         do {
-            System.out.println("How many chips should each player strart with? (min 3000, max 1000000)");
+            System.out.println("How many chips should each player start with? (min 3000, max 1000000)");
             String startCashString = in.nextLine();
             try {
                 startCash = Integer.parseInt(startCashString);
@@ -155,10 +135,11 @@ class Game {
 
         while (table.playStage(in, roundWinners));
 
+        List<Player> playersList = players.getPlayers();
         if (roundWinners.size() == 0) {
             // determine players final hands
-            for (int i = 0; i < players.size(); i++) {
-                Player player = players.get(i);
+            for (int i = 0; i < playersList.size(); i++) {
+                Player player = playersList.get(i);
                 if (!player.isFolded()) {
                     player.determineFinalHand(table.getHand());
                 }
@@ -177,7 +158,7 @@ class Game {
         transferWinnings(roundWinners);
 
         // bust players with empty stacks
-        for (Player player : players) {
+        for (Player player : playersList) {
             if (player.getStackValue() == 0) {
                 player.bust();
             }
@@ -212,7 +193,7 @@ class Game {
 
     private void distributePots(List<Pot> pots) {
         for (Pot pot : pots) {
-            pot.distribute();
+            pot.distribute(table.getDealer(), players);
         }
     }
 

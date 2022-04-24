@@ -5,8 +5,7 @@ import java.util.List;
 import java.util.Scanner;
 
 class Table {
-    private Game game;
-    private List<Player> players;
+    private Playerlist players;
     private int startCash;
     private List<Pot> pots = new ArrayList<>();
     private int smallBlind = 25;
@@ -15,11 +14,10 @@ class Table {
     private Stage currentStage;
     private Deck deck;
 
-    public Table(List<Player> players, int startCash, Game game) {
-        this.game = game;
+    public Table(Playerlist players, int startCash) {
         this.players = players;
         this.startCash = startCash;
-        pots.add(new Pot(this, 0));
+        pots.add(new Pot(0));
         currentStage = Stage.PREFLOP;
         deck = new Deck(true);
         communityCards = new Hand();
@@ -27,8 +25,8 @@ class Table {
 
     public void resetTable() {
         pots = new ArrayList<>();
-        pots.add(new Pot(this, 0));
-        for (Player player : players) {            
+        pots.add(new Pot(0));
+        for (Player player : players.getPlayers()) {            
             if (!player.isBusted()) {
                 player.setActive();
                 player.resetHand();
@@ -41,46 +39,6 @@ class Table {
         communityCards = new Hand();
     }
 
-    public List<Player> getAllPlayers() {
-        return players;
-    }
-
-    public Player getNextPlayer(Player previousPlayer) {
-        return game.getNextPlayer(previousPlayer);
-    }
-
-    public Player getNextActivePlayer(Player previousPlayer) {
-        Player nextPlayer;
-
-        do {
-            nextPlayer = getNextPlayer(previousPlayer);
-            previousPlayer = nextPlayer;
-        } while (nextPlayer.isFolded() || nextPlayer.isBusted());
-
-        return nextPlayer;
-    }
-
-    public List<Player> getActivePlayers() {
-        List<Player> activePlayers = new ArrayList<>();
-        for (Player player : players) {
-            if (!player.isFolded() && !player.isBusted()) {
-                activePlayers.add(player);
-            }
-        }
-        return activePlayers;
-    }
-
-    public Player getPlayerById(int id) {
-        Player player = null;
-        for (Player p : players) {
-            if (p.getId() == id) {
-                player = p;
-            }
-        }
-
-        return player;
-    }
-
     public int getSmallBlind() {
         return smallBlind;
     }
@@ -90,17 +48,17 @@ class Table {
     }
 
     public Player getDealer() {
-        return players.get(dealerToken);
+        return players.getPlayerById(dealerToken);
     }
 
     public void moveDealerToken() {
-        if (dealerToken == players.size() - 1) {
+        if (dealerToken == players.getPlayerCount() - 1) {
             dealerToken = 0;
             increaseBlinds();
         } else {
             dealerToken++;
         }
-        if (players.get(dealerToken).isBusted()) {
+        if (getDealer().isBusted()) {
             moveDealerToken();
         }
     }
@@ -217,17 +175,17 @@ class Table {
             }
         }
 
-        for (Player player : getActivePlayers()) {
+        for (Player player : players.getActivePlayers()) {
             System.out.printf("%s: %d%n", player.getName(), player.getStackValue());
         }
 
-        BettingRound bettingRound = new BettingRound(this, in);
+        BettingRound bettingRound = new BettingRound(pots, players, getDealer(), in);
         if (currentStage == Stage.PREFLOP) {
-            if (bettingRound.play(true, roundWinners)) {
+            if (bettingRound.play(getSmallBlind(), true, roundWinners)) {
                 return false;
             }
         } else {
-            if (bettingRound.play(false, roundWinners)) {
+            if (bettingRound.play(getSmallBlind(), false, roundWinners)) {
                 return false;
             }
         }
@@ -249,7 +207,7 @@ class Table {
     }
 
     public void revealHands() {
-        for (Player player : players) {
+        for (Player player : players.getPlayers()) {
             if (!player.isFolded() && !player.isBusted()) {
                 String message = "";
                 if (player.mustReveal()) {
@@ -266,8 +224,8 @@ class Table {
 
     private void dealHand() {
         for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < players.size(); j++) {
-                Player player = players.get(j);
+            for (int j = 0; j < players.getPlayers().size(); j++) {
+                Player player = players.getPlayers().get(j);
                 if (!player.isFolded() && !player.isBusted()) {
                     player.receiveCard(deck.drawCard());
                 }                
