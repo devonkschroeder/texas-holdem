@@ -167,9 +167,7 @@ class BettingRound {
             Player nextPlayer = allPlayers.getNextActivePlayer(currentPlayer);
             if (action == PlayerAction.FOLD) {
                 currentPlayer = nextPlayer;
-                // TODO: Something goes wrong when last person folds
-                // before the end of the game
-                if (checkDefaultWin(roundWinners)) {
+                if (checkDefaultWin()) {
                     moveBetsToPots();
                     return true;
                 }
@@ -184,7 +182,7 @@ class BettingRound {
 
     private boolean lastPlayerStanding(Player currentPlayer) {
         for (Player player : allPlayers.getActivePlayers()) {
-            if (!player.isFolded() && player.getStackValue() > 0) {
+            if (player.getStackValue() > 0) {
                 if (player != currentPlayer) {
                     return false;
                 } else {
@@ -293,26 +291,10 @@ class BettingRound {
             }
         }
     }
-
-    /**
-     * 
-     * @param roundWinners a list to fill with the winning players
-     * @return true if there was a winner, false otherwise
-     */
-    private boolean checkDefaultWin(List<Player> roundWinners) {
-        Player winner = null;
-
-        if (activePlayers.size() == 1) {
-            winner = activePlayers.get(0);
-            winner.dontReveal();
-            roundWinners.add(winner);
-
-            // put player bets into table's pots
-            moveBetsToPots();
-            return true;
-        }
-
-        return false;
+    
+    private boolean checkDefaultWin() {
+        List<Player> remainingPlayers = allPlayers.getActivePlayers();
+        return remainingPlayers.size() == 1;
     }
 
     private void setTurnsIncomplete() {

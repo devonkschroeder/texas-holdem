@@ -136,7 +136,7 @@ class Game {
         while (table.playStage(in, roundWinners));
 
         List<Player> playersList = players.getPlayers();
-        if (roundWinners.size() == 0) {
+        if (players.getActivePlayers().size() != 1) { // no default winner
             // determine players final hands
             for (int i = 0; i < playersList.size(); i++) {
                 Player player = playersList.get(i);
@@ -147,10 +147,10 @@ class Game {
 
             // reveal players final hands
             table.revealHands();
-
-            // determine winners
-            determineRoundWinners(roundWinners);
         }
+
+        // determine winners
+        determineRoundWinners(roundWinners);
 
         // distribute winnings and announce winners
         distributePots(table.getPots());
@@ -167,26 +167,27 @@ class Game {
 
     private void determineRoundWinners(List<Player> winners) {
         for (Pot pot : table.getPots()) {
-            determinePotWinners(winners, pot);
+            determinePotWinners(pot);
+
+            for (Player player : pot.getWinners()) {
+                if (!winners.contains(player)) {
+                    winners.add(player);
+                }
+            }
         }
     }
 
-    private void determinePotWinners(List<Player> winners, Pot pot) {
+    private void determinePotWinners(Pot pot) {
         List<Player> potentialWinners = pot.getPotentialWinners();
+        // Set pot winners
         for (Player player : potentialWinners) {
             if (pot.getWinners().size() == 0) {
-                pot.getWinners().add(player);
+                pot.addWinner(player);
             } else if (pot.getWinners().get(0).getFinalHand().compareTo(player.getFinalHand()) == 0) {
-                pot.getWinners().add(player);
+                pot.addWinner(player);
             } else if (pot.getWinners().get(0).getFinalHand().compareTo(player.getFinalHand()) < 0) {
-                pot.getWinners().clear();
-                pot.getWinners().add(player);
-            }
-        }
-
-        for (Player player : pot.getWinners()) {
-            if (!winners.contains(player)) {
-                winners.add(player);
+                pot.clearWinners();
+                pot.addWinner(player);
             }
         }
     }

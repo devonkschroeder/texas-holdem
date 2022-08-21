@@ -36,8 +36,16 @@ class Pot {
         return potentialWinners;
     }
 
+    public void addWinner(Player winner) {
+        winners.add(winner);
+    }
+
     public List<Player> getWinners() {
         return winners;
+    }
+
+    public void clearWinners() {
+        winners.clear();
     }
 
     public void distribute(Player dealer, Playerlist players) {
